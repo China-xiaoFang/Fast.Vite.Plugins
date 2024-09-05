@@ -1,7 +1,7 @@
 {
 	"name": "fast-vite-plugins",
 	"author": "小方",
-	"version": "1.0.2",
+	"version": "1.0.4",
 	"description": "Fast Vite插件库.",
 	"license": "Apache-2.0",
 	"publishConfig": {
@@ -51,6 +51,10 @@
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
 	"files": [
+		"./Fast.png",
+		"./LICENSE",
+		"./README.md",
+		"./README.zh.md",
 		"./dist"
 	],
 	"exports": {

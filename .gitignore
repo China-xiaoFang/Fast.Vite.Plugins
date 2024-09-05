@@ -5,7 +5,7 @@ node_modules
 .DS_Store
 
 # Bundle
-dist
+# dist
 
 # local env files
 .eslintcache
