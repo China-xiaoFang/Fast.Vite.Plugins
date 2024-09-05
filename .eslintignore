@@ -1,0 +1,11 @@
+# Eslint 会忽略的文件
+
+node_modules
+dist
+*.local
+*.sh
+*.md
+*.woff
+*.ttf
+.vscode
+/fast-vite-plugins

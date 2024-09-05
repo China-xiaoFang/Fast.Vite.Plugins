@@ -1,0 +1,58 @@
+{
+	"name": "fast-vite-plugins",
+	"author": "小方",
+	"version": "1.0.0",
+	"description": "Fast Vite插件库.",
+	"license": "Apache-2.0",
+	"publishConfig": {
+		"access": "public"
+	},
+	"homepage": "https://fastdotnet.com",
+	"repository": {
+		"type": "git",
+		"url": "git+https://gitee.com/China-xiaoFang/fast.vite.plugins.git"
+	},
+	"bugs": {
+		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins/issues"
+	},
+	"type": "module",
+	"scripts": {
+		"check": "vue-tsc",
+		"build": "vue-tsc && tsup",
+		"publish": "cd fast-vite-plugins && npm publish",
+		"lint:eslint": "eslint --max-warnings 0 \"packages/**/*.{vue,js,ts,tsx}\" --fix",
+		"lint:prettier": "prettier --write \"packages/**/*.{vue,js,ts,tsx,json,css,less,scss,html,md}\"",
+		"lint": "pnpm lint:eslint && pnpm lint:prettier"
+	},
+	"dependencies": {
+		"rollup-plugin-external-globals": "^0.12.0",
+		"vite-plugin-externals": "^0.6.2"
+	},
+	"devDependencies": {
+		"@types/node": "^22.5.4",
+		"@typescript-eslint/eslint-plugin": "^8.4.0",
+		"@typescript-eslint/parser": "^8.4.0",
+		"eslint": "^8.57.0",
+		"eslint-config-prettier": "^9.1.0",
+		"eslint-define-config": "^2.1.0",
+		"eslint-plugin-import": "^2.30.0",
+		"eslint-plugin-prettier": "^5.2.1",
+		"eslint-plugin-vue": "^9.28.0",
+		"prettier": "^3.3.3",
+		"tsup": "^8.2.4",
+		"tsx": "^4.19.0",
+		"typescript": "^5.5.4",
+		"vite": "^5.4.3",
+		"vue-eslint-parser": "^9.4.3",
+		"vue-tsc": "^2.1.6"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	},
+	"keywords": [
+		"fast",
+		"vite",
+		"plugin library",
+		"plugin"
+	]
+}
