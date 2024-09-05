@@ -1,7 +1,7 @@
 {
 	"name": "fast-vite-plugins",
 	"author": "小方",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"description": "Fast Vite插件库.",
 	"license": "Apache-2.0",
 	"publishConfig": {
@@ -10,7 +10,7 @@
 	"homepage": "https://fastdotnet.com",
 	"repository": {
 		"type": "git",
-		"url": "git+https://gitee.com/China-xiaoFang/fast.vite.plugins.git"
+		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins"
 	},
 	"bugs": {
 		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins/issues"
