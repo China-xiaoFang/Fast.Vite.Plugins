@@ -1,0 +1,20 @@
+{
+	"compilerOptions": {
+		"target": "ESNext",
+		/** https://cn.vitejs.dev/guide/features.html#typescript-compiler-options */
+		"useDefineForClassFields": true,
+		"module": "ESNext",
+		"moduleResolution": "Node",
+		/** TS 严格模式 */
+		"strict": true,
+		"resolveJsonModule": true,
+		"esModuleInterop": true,
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"skipLibCheck": true,
+		/* 启用严格null检查 Enable strict null checks. */
+		"strictNullChecks": false
+	},
+	"include": ["packages"],
+	/** 编译器默认排除的编译文件 */
+	"exclude": ["node_modules", "fast-vite-plugins"]
+}
