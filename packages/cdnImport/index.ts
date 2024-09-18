@@ -50,10 +50,10 @@ function renderUrl(
 		.replace(/\{path\}/g, path);
 }
 
-function getModuleInfo(module: Module, prodUrl: string): Module & { version?: string; pathList?: string[]; cssList?: string[] } {
+function getModuleInfo(module: Module, prodUrl: string): Module & { pathList?: string[]; cssList?: string[] } {
 	prodUrl = module.prodUrl || prodUrl;
 	const v = module;
-	const version = getModuleVersion(v.name);
+	const version = module.version || getModuleVersion(v.name);
 	let pathList: string[] = [];
 	if (!Array.isArray(v.path)) {
 		pathList.push(v.path);
@@ -71,7 +71,8 @@ function getModuleInfo(module: Module, prodUrl: string): Module & { version?: st
 			throw new Error(`modules: ${data.name} package.json file does not exist`);
 		}
 		return renderUrl(prodUrl, {
-			...data,
+			name: data.name,
+			version: data.version,
 			path: p,
 		});
 	});
@@ -85,7 +86,8 @@ function getModuleInfo(module: Module, prodUrl: string): Module & { version?: st
 		? []
 		: css.map((c) =>
 				renderUrl(prodUrl, {
-					...data,
+					name: data.name,
+					version: data.version,
 					path: c,
 				})
 			);
@@ -108,12 +110,9 @@ function cdnImport(options: CdnImportOptions): Plugin[] {
 
 	let isBuild = false;
 
-	const data = modules
-		.map((m) => {
-			const list = (Array.isArray(m) ? m : [m]).map((v) => (typeof v === "function" ? v(prodUrl) : v));
-			return list.map((v) => getModuleInfo(v, prodUrl));
-		})
-		.flat();
+	const data = (Array.isArray(modules) ? modules : [modules])
+		.map((v) => (typeof v === "function" ? v(prodUrl) : v))
+		.map((v) => getModuleInfo(v, prodUrl));
 
 	const externalMap: {
 		[name: string]: string;

@@ -167,8 +167,6 @@ module.exports = defineConfig({
 		"prefer-template": "error",
 		// 禁止在同一作用域中重新声明变量
 		"no-redeclare": "error",
-		// 禁止在同一作用域中重新声明 TypeScript 变量
-		"@typescript-eslint/no-redeclare": "error",
 
 		// 最佳实践
 		// 确保数组的回调函数（如 Array.prototype.map、Array.prototype.filter、Array.prototype.reduce 等）总是有一个返回值
@@ -220,6 +218,8 @@ module.exports = defineConfig({
 		"@typescript-eslint/explicit-module-boundary-types": "off",
 		// 要求在 TypeScript 函数和方法中显式地指定返回类型
 		"@typescript-eslint/explicit-function-return-type": "error",
+		// 禁止在同一作用域中重新声明 TypeScript 变量
+		"@typescript-eslint/no-redeclare": "error",
 		// 允许定义未使用的变量
 		"@typescript-eslint/no-unused-vars": "off",
 		// 允许使用自定义TypeScript模块和命名空间
