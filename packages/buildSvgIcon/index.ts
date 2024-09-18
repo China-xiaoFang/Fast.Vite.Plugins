@@ -5,9 +5,10 @@ import type { Plugin, ResolvedConfig } from "vite";
 /**
  * 查找 svg 文件
  */
-function findSvgFile(dir: string): { iconName: string; iconContent: string }[] {
+
+const findSvgFile = (dir: string): { iconName: string; componentName: string; iconContent: string }[] => {
 	// svg 内容
-	const svgContents: { iconName: string; iconContent: string }[] = [];
+	const svgContents: { iconName: string; componentName: string; iconContent: string }[] = [];
 	// 获取当前目录下的文件
 	const svgFiles = fs.readdirSync(dir, {
 		withFileTypes: true,
@@ -19,12 +20,13 @@ function findSvgFile(dir: string): { iconName: string; iconContent: string }[] {
 		} else {
 			const iconName = file.name.replace(".svg", "");
 
-			const svgInfo = fs
-				.readFileSync(path.join(dir, file.name))
-				.toString()
+			const svgContent = fs
+				.readFileSync(path.join(dir, file.name), "utf-8")
 				.replace(/<\?xml.*?\?>/, "")
 				.replace(/<!DOCTYPE svg.*?>/, "")
-				.replace(/(\r)|(\n)/g, "")
+				// .replace(/(\r)|(\n)/g, "")
+				.trimStart()
+				.trimEnd()
 				// .replace(/(fill="[^>+].*?")/g, 'fill=""')
 				.replace(/<svg([^>+].*?)>/, (match, attr) => {
 					const viewBoxMatch = attr.match(/viewBox="[^"]+"/);
@@ -48,8 +50,10 @@ function findSvgFile(dir: string): { iconName: string; iconContent: string }[] {
 				});
 
 			svgContents.push({
-				iconName: iconName.charAt(0).toUpperCase() + iconName.slice(1),
-				iconContent: svgInfo,
+				// iconName: iconName.charAt(0).toUpperCase() + iconName.slice(1),
+				iconName,
+				componentName: iconName.charAt(0).toUpperCase() + iconName.slice(1),
+				iconContent: svgContent,
 			});
 		}
 	});
@@ -63,47 +67,66 @@ function findSvgFile(dir: string): { iconName: string; iconContent: string }[] {
 		}
 		return 0;
 	});
-}
+};
 
 /**
- * 写入 TSX  组件
+ * 写入 TSX  图标
  */
-function writeTsxComponent(componentName: string, componentDir: string, content: string): void {
-	fs.mkdirSync(componentDir, { recursive: true });
+const writeTSXIcon = (iconName: string, componentName: string, iconDir: string, svgContent: string): void => {
+	const srcDir = path.join(iconDir, "src");
 
-	const componentContent = `import { defineComponent } from "vue";
+	fs.mkdirSync(iconDir, { recursive: true });
+	fs.mkdirSync(srcDir, { recursive: true });
+
+	const iconContent = `import { defineComponent } from "vue";
 import { ElIcon } from "element-plus";
 
 /**
  * ${componentName} 图标组件
  */
-export const ${componentName} = defineComponent({
+export default defineComponent({
 	name: "${componentName}",
 	components: {
 		ElIcon,
 	},
-	setup(props, { attrs, slots, emit, expose }) {
-		expose({});
-
+	setup(_, { attrs }) {
 		return {
 			attrs,
-			slots,
 		};
 	},
 	render() {
 		return (
-			<ElIcon {...this.attrs} class="el-icon icon fa-icon fa-icon-${componentName}">
-				${content}
+			<ElIcon {...this.attrs} class="fa-icon fa-icon-${componentName} icon">
+${svgContent
+	.split("\n")
+	.map((line) => `				${line}`)
+	.join("\n")}
 			</ElIcon>
 		);
 	},
 });
+`;
 
+	fs.writeFileSync(path.join(srcDir, `${iconName}.tsx`), iconContent);
+
+	const indexContent = `import { withInstall } from "fast-element-plus";
+import ${componentName}TSX from "./src/${iconName}.tsx";
+
+export const ${componentName} = withInstall(${componentName}TSX);
 export default ${componentName};
 `;
 
-	fs.writeFileSync(path.join(componentDir, "index.tsx"), componentContent);
-}
+	fs.writeFileSync(path.join(iconDir, "index.ts"), indexContent);
+
+	const indexDTS = `import type { TSXWithInstall } from "fast-element-plus";
+import type { default as ${componentName}TSX } from "./src/${iconName}";
+
+export declare const ${componentName}: TSXWithInstall<typeof ${componentName}TSX>;
+export default ${componentName};
+`;
+
+	fs.writeFileSync(path.join(iconDir, "index.d.ts"), indexDTS);
+};
 
 /**
  * 构建 svg 图标组件
@@ -124,38 +147,63 @@ function buildSvgIcon(dir: string, writeDir: string): Plugin {
 		buildStart(): void | Promise<void> {
 			const svgFiles = findSvgFile(path.resolve(config.root, dir));
 
-			const svgCRPath = path.resolve(config.root, writeDir);
-			fs.mkdirSync(svgCRPath, { recursive: true });
+			const iconsPath = path.resolve(config.root, writeDir);
+			fs.mkdirSync(iconsPath, { recursive: true });
 
-			let importContent = "";
+			let iconImportContent = "";
+			let iconTypeContent = "";
 			let exportContent = "";
-			let typeContent = "";
+			let typeDTSContent = "";
 
 			svgFiles.forEach((svg, idx) => {
-				writeTsxComponent(svg.iconName, path.join(svgCRPath, svg.iconName), svg.iconContent);
+				writeTSXIcon(svg.iconName, svg.componentName, path.join(iconsPath, svg.iconName), svg.iconContent);
 
-				importContent += `import { ${svg.iconName} } from "./${svg.iconName}";\n`;
-				exportContent += `export * from "./${svg.iconName}";\n`;
+				iconImportContent += `import { ${svg.componentName} } from "./${svg.iconName}";
+`;
 
-				typeContent += `	${svg.iconName},`;
+				iconTypeContent += `	${svg.iconName},`;
+
+				exportContent += `export * from "./${svg.iconName}";
+`;
+
+				typeDTSContent += `		${svg.componentName}: (typeof import("./"))["${svg.componentName}"];`;
 
 				if (idx + 1 < svgFiles.length) {
-					typeContent += "\n";
+					typeDTSContent += "\n";
+					iconTypeContent += "\n";
 				}
 			});
 
 			fs.writeFileSync(
-				path.resolve(svgCRPath, "index.ts"),
+				path.join(iconsPath, "index.ts"),
 				`import type { DefineComponent } from "vue";
-${importContent}
+${iconImportContent}
 ${exportContent}
 export default [
-${typeContent}
-] as unknown as DefineComponent[];
+${iconTypeContent}
+] as Plugin[];
+`
+			);
+
+			fs.writeFileSync(
+				path.join(iconsPath, "index.d.ts"),
+				`// For this project development
+import "@vue/runtime-core";
+
+// GlobalComponents for Volar
+declare module "@vue/runtime-core" {
+	export interface GlobalComponents {
+${typeDTSContent}
+	}
+
+	// interface ComponentCustomProperties {}
+}
+
+export {};
 `
 			);
 		},
 	};
 }
 
-export { buildSvgIcon };
+export { findSvgFile, writeTSXIcon, buildSvgIcon };

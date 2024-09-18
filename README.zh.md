@@ -1,8 +1,72 @@
 **中** | [En](https://github.com/China-xiaoFang/fast.vite.plugins)
 
-# Fast.Vite.Plugins
+<h1 align="center">Fast.Vite.Plugins</h1>
 
-- 一个基于 `Vite` 构建项目的插件库。
+<p align="center">
+  一个基于 <code>Vite</code> 构建项目的插件库。
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/fast-vite-plugins">
+    <img src="https://img.shields.io/npm/v/fast-vite-plugins?color=orange&label=" alt="version" />
+  </a>
+  <a href="https://gitee.com/China-xiaoFang/fast.vite.plugins/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/fast-vite-plugins" alt="license" />
+  </a>
+</p>
+
+## 安装
+
+```sh
+# npm 安装
+npm install fast-vite-plugins -D
+```
+
+```sh
+# pnpm 安装（推荐）
+pnpm install fast-vite-plugins -D
+```
+
+## 使用
+
+在 `vite.config.ts`:
+
+```typescript
+import { defineConfig } from "vite";
+import { buildSvgIcon, cdnImport, tsxComponentAutoImport, vueComponentAutoImport, versionUpdatePlugin } from "fast-vite-plugins";
+
+export default defineConfig({
+  plugins: [
+    /** 构建本地 SVG 图标 */
+    buildSvgIcon("./src/assets/icons", "./src/icons"),
+    /** CDN 导入 */
+    cdnImport({
+      // 开发环境使用 CDN 路径
+      enableInDevMode: true,
+      prodUrl: "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",
+      modules: [
+        {
+          name: "vue",
+          var: "Vue",
+          version: "3.4.27",
+          path: "dist/vue.global.prod.min.js"
+        },
+        {
+          name: "vue-router",
+          var: "VueRouter",
+          path: "4.2.2/dist/vue-router.global.prod.min.js"
+        }
+      ]
+    }),
+    /** TSX 组件自动导入导出 */
+    tsxComponentAutoImport("./src/components"),
+    /** VUE 组件自动导入导出 */
+    vueComponentAutoImport("./src/components"),
+    /** 打包版本号更新 */
+    versionUpdatePlugin("1.0.0"),
+  ]
+})
+```
 
 ## 更新日志
 
@@ -33,6 +97,14 @@ Apache开源许可证
 ```
 请勿用于违反我国法律的项目上
 ```
+
+## 贡献者
+
+感谢他们的所做的一切贡献！
+
+<a href="https://github.com/China-xiaoFang/Fast.Vite.Plugins/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=China-xiaoFang/Fast.Vite.Plugins" />
+</a>
 
 ## 补充说明
 

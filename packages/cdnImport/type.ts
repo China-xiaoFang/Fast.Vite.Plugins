@@ -8,6 +8,11 @@ export interface Module {
 	 */
 	var: string;
 	/**
+	 * 版本号
+	 * @description 如果不传则默认从 node_modules 中获取
+	 */
+	version?: string;
+	/**
 	 * 模块路径
 	 */
 	path: string | string[];
@@ -36,7 +41,7 @@ export interface CdnImportOptions {
 	 * 生产环境 URL
 	 */
 	prodUrl?: string;
-	modules: (Module | Module[] | GetModuleFunc | GetModuleFunc[])[];
+	modules: Module | Module[] | GetModuleFunc | GetModuleFunc[];
 	/**
 	 * 是否在开发模式启用，默认是 false
 	 */
