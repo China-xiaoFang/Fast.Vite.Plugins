@@ -1,8 +1,72 @@
 [中](https://gitee.com/China-xiaoFang/fast.vite.plugins) | **En**
 
-# Fast.Vite.Plugins
+<h1 align="center">Fast.Vite.Plugins</h1>
 
-- A plugin library for building projects based on `Vite`.
+<p align="center">
+  A plugin library for building projects based on <code>Vite</code>.
+</p>
+
+<p align="center">
+  <a href="https://www.npmjs.com/package/fast-vite-plugins">
+    <img src="https://img.shields.io/npm/v/fast-vite-plugins?color=orange&label=" alt="version" />
+  </a>
+  <a href="https://gitee.com/China-xiaoFang/fast.vite.plugins/blob/master/LICENSE">
+    <img src="https://img.shields.io/npm/l/fast-vite-plugins" alt="license" />
+  </a>
+</p>
+
+## Install
+
+```sh
+# npm Install
+npm install fast-vite-plugins -D
+```
+
+```sh
+# pnpm Install (recommend)
+pnpm install fast-vite-plugins -D
+```
+
+## Use
+
+In `vite.config.ts`:
+
+```typescript
+import { defineConfig } from "vite";
+import { buildSvgIcon, cdnImport, tsxComponentAutoImport, vueComponentAutoImport, versionUpdatePlugin } from "fast-vite-plugins";
+
+export default defineConfig({
+  plugins: [
+    /** Building native SVG icons */
+    buildSvgIcon("./src/assets/icons", "./src/icons"),
+    /** CDN Import */
+    cdnImport({
+      // Development environment uses CDN path
+      enableInDevMode: true,
+      prodUrl: "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",
+      modules: [
+        {
+          name: "vue",
+          var: "Vue",
+          version: "3.4.27",
+          path: "dist/vue.global.prod.min.js"
+        },
+        {
+          name: "vue-router",
+          var: "VueRouter",
+          path: "4.2.2/dist/vue-router.global.prod.min.js"
+        }
+      ]
+    }),
+    /** Automatic import and export of TSX components */
+    tsxComponentAutoImport("./src/components"),
+    /** Automatic import and export of VUE components */
+    vueComponentAutoImport("./src/components"),
+    /** Package version number update */
+    versionUpdatePlugin("1.0.0"),
+  ]
+})
+```
 
 ## Update log
 
@@ -33,6 +97,14 @@ WHETHER ARISING IN CONTRACT, TORT OR OTHERWISE, IN CONNECTION WITH THE SOFTWARE 
 ```
 Please do not use it for projects that violate our country's laws
 ```
+
+## Contributors
+
+Thank you for all their contributions!
+
+<a href="https://github.com/China-xiaoFang/Fast.Vite.Plugins/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=China-xiaoFang/Fast.Vite.Plugins" />
+</a>
 
 ## Supplementary instructions
 
