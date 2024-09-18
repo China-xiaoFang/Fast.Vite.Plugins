@@ -1,49 +1,79 @@
-"use strict";var T=Object.create;var y=Object.defineProperty;var k=Object.getOwnPropertyDescriptor;var j=Object.getOwnPropertyNames;var M=Object.getPrototypeOf,U=Object.prototype.hasOwnProperty;var b=(t,n)=>{for(var e in n)y(t,e,{get:n[e],enumerable:!0})},w=(t,n,e,i)=>{if(n&&typeof n=="object"||typeof n=="function")for(let r of j(n))!U.call(t,r)&&r!==e&&y(t,r,{get:()=>n[r],enumerable:!(i=k(n,r))||i.enumerable});return t};var m=(t,n,e)=>(e=t!=null?T(M(t)):{},w(n||!t||!t.__esModule?y(e,"default",{value:t,enumerable:!0}):e,t)),O=t=>w(y({},"__esModule",{value:!0}),t);var Z={};b(Z,{buildSvgIcon:()=>J,cdnImport:()=>W,componentAutoImport:()=>_,versionUpdatePlugin:()=>Y});module.exports=O(Z);var g=m(require("fs"),1),u=m(require("path"),1);function P(t){let n=[];return g.default.readdirSync(t,{withFileTypes:!0}).forEach(i=>{if(i.isDirectory())n.push(...P(u.default.join(t,i.name)));else{let r=i.name.replace(".svg",""),l=g.default.readFileSync(u.default.join(t,i.name)).toString().replace(/<\?xml.*?\?>/,"").replace(/<!DOCTYPE svg.*?>/,"").replace(/(\r)|(\n)/g,"").replace(/<svg([^>+].*?)>/,(c,p)=>{let o=p.match(/viewBox="[^"]+"/),s=p.match(/width="(\d+)"/),a=p.match(/height="(\d+)"/),f=1024,h=1024;s&&(f=s[0]),a&&(h=a[0]);let C="";return o?C=o[0]:C=`viewBox="0 0 ${f} ${h}"`,`<svg xmlns="http://www.w3.org/2000/svg" ${C}>`});n.push({iconName:r.charAt(0).toUpperCase()+r.slice(1),iconContent:l})}}),n.sort((i,r)=>i.iconName<r.iconName?-1:i.iconName>r.iconName?1:0)}function R(t,n,e){g.default.mkdirSync(n,{recursive:!0});let i=`import { defineComponent } from "vue";
+"use strict";var D=Object.create;var x=Object.defineProperty;var b=Object.getOwnPropertyDescriptor;var k=Object.getOwnPropertyNames;var U=Object.getPrototypeOf,M=Object.prototype.hasOwnProperty;var O=(t,e)=>{for(var r in e)x(t,r,{get:e[r],enumerable:!0})},P=(t,e,r,s)=>{if(e&&typeof e=="object"||typeof e=="function")for(let o of k(e))!M.call(t,o)&&o!==r&&x(t,o,{get:()=>e[o],enumerable:!(s=b(e,o))||s.enumerable});return t};var g=(t,e,r)=>(r=t!=null?D(U(t)):{},P(e||!t||!t.__esModule?x(r,"default",{value:t,enumerable:!0}):r,t)),R=t=>P(x({},"__esModule",{value:!0}),t);var Y={};O(Y,{buildSvgIcon:()=>J,cdnImport:()=>H,findSvgFile:()=>$,tsxComponentAutoImport:()=>W,versionUpdatePlugin:()=>V,vueComponentAutoImport:()=>_,writeTSXIcon:()=>T});module.exports=R(Y);var u=g(require("fs"),1),l=g(require("path"),1),$=t=>{let e=[];return u.default.readdirSync(t,{withFileTypes:!0}).forEach(s=>{if(s.isDirectory())e.push(...$(l.default.join(t,s.name)));else{let o=s.name.replace(".svg",""),a=u.default.readFileSync(l.default.join(t,s.name),"utf-8").replace(/<\?xml.*?\?>/,"").replace(/<!DOCTYPE svg.*?>/,"").trimStart().trimEnd().replace(/<svg([^>+].*?)>/,(c,p)=>{let i=p.match(/viewBox="[^"]+"/),n=p.match(/width="(\d+)"/),m=p.match(/height="(\d+)"/),f=1024,h=1024;n&&(f=n[0]),m&&(h=m[0]);let C="";return i?C=i[0]:C=`viewBox="0 0 ${f} ${h}"`,`<svg xmlns="http://www.w3.org/2000/svg" ${C}>`});e.push({iconName:o,componentName:o.charAt(0).toUpperCase()+o.slice(1),iconContent:a})}}),e.sort((s,o)=>s.iconName<o.iconName?-1:s.iconName>o.iconName?1:0)},T=(t,e,r,s)=>{let o=l.default.join(r,"src");u.default.mkdirSync(r,{recursive:!0}),u.default.mkdirSync(o,{recursive:!0});let a=`import { defineComponent } from "vue";
 import { ElIcon } from "element-plus";
 
 /**
- * ${t} \u56FE\u6807\u7EC4\u4EF6
+ * ${e} \u56FE\u6807\u7EC4\u4EF6
  */
-export const ${t} = defineComponent({
-	name: "${t}",
+export default defineComponent({
+	name: "${e}",
 	components: {
 		ElIcon,
 	},
-	setup(props, { attrs, slots, emit, expose }) {
-		expose({});
-
+	setup(_, { attrs }) {
 		return {
 			attrs,
-			slots,
 		};
 	},
 	render() {
 		return (
-			<ElIcon {...this.attrs} class="el-icon icon fa-icon fa-icon-${t}">
-				${e}
+			<ElIcon {...this.attrs} class="fa-icon fa-icon-${e} icon">
+${s.split(`
+`).map(i=>`				${i}`).join(`
+`)}
 			</ElIcon>
 		);
 	},
 });
+`;u.default.writeFileSync(l.default.join(o,`${t}.tsx`),a);let c=`import { withInstall } from "fast-element-plus";
+import ${e}TSX from "./src/${t}.tsx";
 
-export default ${t};
-`;g.default.writeFileSync(u.default.join(n,"index.tsx"),i)}function J(t,n){if(!t||!n)return;let e;return{name:"fast-vite-plugin-build-svg-icon",configResolved:i=>{e=i},buildStart(){let i=P(u.default.resolve(e.root,t)),r=u.default.resolve(e.root,n);g.default.mkdirSync(r,{recursive:!0});let l="",c="",p="";i.forEach((o,s)=>{R(o.iconName,u.default.join(r,o.iconName),o.iconContent),l+=`import { ${o.iconName} } from "./${o.iconName}";
-`,c+=`export * from "./${o.iconName}";
-`,p+=`	${o.iconName},`,s+1<i.length&&(p+=`
-`)}),g.default.writeFileSync(u.default.resolve(r,"index.ts"),`import type { DefineComponent } from "vue";
-${l}
-${c}
-export default [
-${p}
-] as unknown as DefineComponent[];
-`)}}}var x=m(require("fs"),1),F=m(require("path"),1),D=m(require("rollup-plugin-external-globals"),1),E=require("vite-plugin-externals"),L=process.env.NODE_ENV==="development";function B(t){let n=process.cwd(),e=F.default.join(n,"node_modules",t,"package.json");return x.default.existsSync(e)?JSON.parse(x.default.readFileSync(e,"utf8")).version:""}function A(t){return!!(t.startsWith("http:")||t.startsWith("https:")||t.startsWith("//"))}function N(t,n){let{path:e}=n;return A(e)&&(t=e),t.replace(/\{name\}/g,n.name).replace(/\{version\}/g,n.version).replace(/\{path\}/g,e)}function H(t,n){n=t.prodUrl||n;let e=t,i=B(e.name),r=[];Array.isArray(e.path)?r=e.path:r.push(e.path);let l={...e,version:i};r=r.map(o=>{if(!i&&!A(o))throw new Error(`modules: ${l.name} package.json file does not exist`);return N(n,{...l,path:o})});let c=e.css||[];!Array.isArray(c)&&c&&(c=[c]);let p=Array.isArray(c)?c.map(o=>N(n,{...l,path:o})):[];return{...e,version:i,pathList:r,cssList:p}}function W(t){let{modules:n=[],prodUrl:e="https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",enableInDevMode:i=!1}=t,r=!1,l=n.map(o=>(Array.isArray(o)?o:[o]).map(a=>typeof a=="function"?a(e):a).map(a=>H(a,e))).flat(),c={};l.forEach(o=>{c[o.name]=o.var,Array.isArray(o.alias)&&o.alias.forEach(s=>{c[s]=o.var})});let p=[{name:"fast-vite-plugin-cdn-import",enforce:"pre",config(o,{command:s}){r=s==="build";let a={build:{rollupOptions:{plugins:[]}}};return r&&(a.build.rollupOptions.plugins=[(0,D.default)(c)]),a},transformIndexHtml(o){if(!r&&!i)return o;let s=[];return l.forEach(a=>{a.pathList.forEach(f=>{let h={src:f,crossorigin:"anonymous",...a?.attrs??{}};s.push({tag:"script",attrs:h})}),a.cssList.forEach(f=>{let h={href:f,rel:"stylesheet",crossorigin:"anonymous",...a?.attrs??{}};s.push({tag:"link",attrs:h})})}),s}}];return L&&i&&p.push((0,E.viteExternalsPlugin)(c,{enforce:"pre"})),p}var $=m(require("fs"),1),I=m(require("path"),1);function _(t){if(t)return{name:"fast-vite-plugin-component-auto-import",buildStart(){let n=typeof t=="string"?t:t.dir,e=s=>s.charAt(0).toUpperCase()+s.slice(1),i=typeof t=="string"?e:t.formatter??e,r=$.default.readdirSync(n,{withFileTypes:!0});if(r?.length===0)return;let l=r.filter(s=>s.name!=="index.ts").map(s=>({componentName:i(s.name),fileName:s.name})).sort((s,a)=>s.componentName<a.componentName?-1:s.componentName>a.componentName?1:0),c="",p="",o="";l.forEach(({componentName:s,fileName:a},f)=>{c+=`import ${s} from "./${a}/index.vue";
-`,p+=`export * from "./${a}/index.vue";
-`,o+=`	${s},`,f+1<l.length&&(o+=`
-`)}),$.default.writeFileSync(I.default.join(n,"index.ts"),`import type { DefineComponent } from "vue";
-${c}
+export const ${e} = withInstall(${e}TSX);
+export default ${e};
+`;u.default.writeFileSync(l.default.join(r,"index.ts"),c);let p=`import type { TSXWithInstall } from "fast-element-plus";
+import type { default as ${e}TSX } from "./src/${t}";
+
+export declare const ${e}: TSXWithInstall<typeof ${e}TSX>;
+export default ${e};
+`;u.default.writeFileSync(l.default.join(r,"index.d.ts"),p)};function J(t,e){if(!t||!e)return;let r;return{name:"fast-vite-plugin-build-svg-icon",configResolved:s=>{r=s},buildStart(){let s=$(l.default.resolve(r.root,t)),o=l.default.resolve(r.root,e);u.default.mkdirSync(o,{recursive:!0});let a="",c="",p="",i="";s.forEach((n,m)=>{T(n.iconName,n.componentName,l.default.join(o,n.iconName),n.iconContent),a+=`import { ${n.componentName} } from "./${n.iconName}";
+`,c+=`	${n.iconName},`,p+=`export * from "./${n.iconName}";
+`,i+=`		${n.componentName}: (typeof import("./"))["${n.componentName}"];`,m+1<s.length&&(i+=`
+`,c+=`
+`)}),u.default.writeFileSync(l.default.join(o,"index.ts"),`import type { DefineComponent } from "vue";
+${a}
 ${p}
 export default [
-${o}
+${c}
+] as Plugin[];
+`),u.default.writeFileSync(l.default.join(o,"index.d.ts"),`// For this project development
+import "@vue/runtime-core";
+
+// GlobalComponents for Volar
+declare module "@vue/runtime-core" {
+	export interface GlobalComponents {
+${i}
+	}
+
+	// interface ComponentCustomProperties {}
+}
+
+export {};
+`)}}}var S=g(require("fs"),1),j=g(require("path"),1),N=g(require("rollup-plugin-external-globals"),1),E=require("vite-plugin-externals"),X=process.env.NODE_ENV==="development";function L(t){let e=process.cwd(),r=j.default.join(e,"node_modules",t,"package.json");return S.default.existsSync(r)?JSON.parse(S.default.readFileSync(r,"utf8")).version:""}function A(t){return!!(t.startsWith("http:")||t.startsWith("https:")||t.startsWith("//"))}function I(t,e){let{path:r}=e;return A(r)&&(t=r),t.replace(/\{name\}/g,e.name).replace(/\{version\}/g,e.version).replace(/\{path\}/g,r)}function B(t,e){e=t.prodUrl||e;let r=t,s=t.version||L(r.name),o=[];Array.isArray(r.path)?o=r.path:o.push(r.path);let a={...r,version:s};o=o.map(i=>{if(!s&&!A(i))throw new Error(`modules: ${a.name} package.json file does not exist`);return I(e,{name:a.name,version:a.version,path:i})});let c=r.css||[];!Array.isArray(c)&&c&&(c=[c]);let p=Array.isArray(c)?c.map(i=>I(e,{name:a.name,version:a.version,path:i})):[];return{...r,version:s,pathList:o,cssList:p}}function H(t){let{modules:e=[],prodUrl:r="https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",enableInDevMode:s=!1}=t,o=!1,a=(Array.isArray(e)?e:[e]).map(i=>typeof i=="function"?i(r):i).map(i=>B(i,r)),c={};a.forEach(i=>{c[i.name]=i.var,Array.isArray(i.alias)&&i.alias.forEach(n=>{c[n]=i.var})});let p=[{name:"fast-vite-plugin-cdn-import",enforce:"pre",config(i,{command:n}){o=n==="build";let m={build:{rollupOptions:{plugins:[]}}};return o&&(m.build.rollupOptions.plugins=[(0,N.default)(c)]),m},transformIndexHtml(i){if(!o&&!s)return i;let n=[];return a.forEach(m=>{m.pathList.forEach(f=>{let h={src:f,crossorigin:"anonymous",...m?.attrs??{}};n.push({tag:"script",attrs:h})}),m.cssList.forEach(f=>{let h={href:f,rel:"stylesheet",crossorigin:"anonymous",...m?.attrs??{}};n.push({tag:"link",attrs:h})})}),n}}];return X&&s&&p.push((0,E.viteExternalsPlugin)(c,{enforce:"pre"})),p}var y=g(require("fs"),1),w=g(require("path"),1);function W(t){if(t)return{name:"fast-vite-plugin-tsx-component-auto-import",buildStart(){let e=typeof t=="string"?t:t.dir,r=n=>n.charAt(0).toUpperCase()+n.slice(1),s=typeof t=="string"?r:t.formatter??r,o=y.default.readdirSync(e,{withFileTypes:!0});if(o?.length===0)return;let a=o.filter(n=>n.name!=="index.ts").map(n=>({componentName:s(n.name),fileName:n.name})).sort((n,m)=>n.componentName<m.componentName?-1:n.componentName>m.componentName?1:0),c="",p="",i="";a.forEach(({componentName:n,fileName:m},f)=>{c+=`import { ${n} } from "./${m}";
+`,p+=`export * from "./${m}";
+`,i+=`	${n},`,f+1<a.length&&(i+=`
+`)}),y.default.writeFileSync(w.default.join(e,"index.ts"),`import type { Plugin } from "vue";
+${c}
+${p}
+export default [
+${i}
+] as Plugin[];
+`)}}}function _(t){if(t)return{name:"fast-vite-plugin-vue-component-auto-import",buildStart(){let e=typeof t=="string"?t:t.dir,r=n=>n.charAt(0).toUpperCase()+n.slice(1),s=typeof t=="string"?r:t.formatter??r,o=y.default.readdirSync(e,{withFileTypes:!0});if(o?.length===0)return;let a=o.filter(n=>n.name!=="index.ts").map(n=>({componentName:s(n.name),fileName:n.name})).sort((n,m)=>n.componentName<m.componentName?-1:n.componentName>m.componentName?1:0),c="",p="",i="";a.forEach(({componentName:n,fileName:m},f)=>{c+=`import ${n} from "./${m}/index.vue";
+`,p+=`export * from "./${m}/index.vue";
+`,i+=`	${n},`,f+1<a.length&&(i+=`
+`)}),y.default.writeFileSync(w.default.join(e,"index.ts"),`import type { DefineComponent } from "vue";
+${c}
+${p}
+export default [
+${i}
 ] as unknown as DefineComponent[];
-`)}}}var d=m(require("fs"),1),S=m(require("path"),1);function v(t,n=2){return t.toString().padStart(n,"0")}function V(t){let n=t.getUTCFullYear(),e=v(t.getUTCMonth()+1),i=v(t.getUTCDate()),r=v(t.getUTCHours()),l=v(t.getUTCMinutes()),c=v(t.getUTCSeconds()),p=v(t.getUTCMilliseconds(),3);return`Z ${n}-${e}-${i} ${r}:${l}:${c}.${p}`}function Y(t){let n;return{name:"fast-vite-plugin-version-update",configResolved:e=>{n=e},buildStart(){let i=V(new Date),r=n.publicDir,l=S.default.join(r,"version.json");d.default.existsSync(r)||d.default.mkdirSync(r);let c=JSON.stringify({version:`v${t}`,dateTime:i},null,4);d.default.writeFileSync(l,c);let p=S.default.join(n.base,"package.json");if(d.default.existsSync(p)){let o=JSON.parse(d.default.readFileSync(p,"utf-8"));o.version=t,d.default.writeFileSync(p,JSON.stringify(o,null,2),"utf-8")}}}}0&&(module.exports={buildSvgIcon,cdnImport,componentAutoImport,versionUpdatePlugin});
+`)}}}var d=g(require("fs"),1),F=g(require("path"),1);function v(t,e=2){return t.toString().padStart(e,"0")}function G(t){let e=t.getUTCFullYear(),r=v(t.getUTCMonth()+1),s=v(t.getUTCDate()),o=v(t.getUTCHours()),a=v(t.getUTCMinutes()),c=v(t.getUTCSeconds()),p=v(t.getUTCMilliseconds(),3);return`Z ${e}-${r}-${s} ${o}:${a}:${c}.${p}`}function V(t){let e;return{name:"fast-vite-plugin-version-update",configResolved:r=>{e=r},buildStart(){let s=G(new Date),o=e.publicDir,a=F.default.join(o,"version.json");d.default.existsSync(o)||d.default.mkdirSync(o);let c=JSON.stringify({version:`v${t}`,dateTime:s},null,4);d.default.writeFileSync(a,c);let p=F.default.join(e.base,"package.json");if(d.default.existsSync(p)){let i=JSON.parse(d.default.readFileSync(p,"utf-8"));i.version=t,d.default.writeFileSync(p,JSON.stringify(i,null,2),"utf-8")}}}}0&&(module.exports={buildSvgIcon,cdnImport,findSvgFile,tsxComponentAutoImport,versionUpdatePlugin,vueComponentAutoImport,writeTSXIcon});
 //# sourceMappingURL=index.cjs.map
