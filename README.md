@@ -26,7 +26,7 @@ npm install fast-vite-plugins -D
 # Yarn
 yarn add fast-vite-plugins -D
 
-# recommend
+# pnpm (recommend)
 pnpm install fast-vite-plugins -D
 ```
 
