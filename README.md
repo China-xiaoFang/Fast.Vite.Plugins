@@ -18,18 +18,21 @@
 ## Install
 
 ```sh
-# npm Install
-npm install fast-vite-plugins -D
-```
+# Choose a package manager of your choice
 
-```sh
-# pnpm Install (recommend)
+# NPM
+npm install fast-vite-plugins -D
+
+# Yarn
+yarn add fast-vite-plugins -D
+
+# recommend
 pnpm install fast-vite-plugins -D
 ```
 
 ## Use
 
-In `vite.config.ts`:
+In `vite.config.ts`
 
 ```typescript
 import { defineConfig } from "vite";

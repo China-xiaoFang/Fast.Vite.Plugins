@@ -18,18 +18,21 @@
 ## 安装
 
 ```sh
-# npm 安装
-npm install fast-vite-plugins -D
-```
+# 选择一个你喜欢的包管理器
 
-```sh
-# pnpm 安装（推荐）
+# NPM
+npm install fast-vite-plugins -D
+
+# Yarn
+yarn add fast-vite-plugins -D
+
+# pnpm（推荐）
 pnpm install fast-vite-plugins -D
 ```
 
 ## 使用
 
-在 `vite.config.ts`:
+在 `vite.config.ts`
 
 ```typescript
 import { defineConfig } from "vite";
