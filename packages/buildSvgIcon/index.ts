@@ -79,29 +79,18 @@ const writeTSXIcon = (iconName: string, componentName: string, iconDir: string, 
 	fs.mkdirSync(srcDir, { recursive: true });
 
 	const iconContent = `import { defineComponent } from "vue";
-import { ElIcon } from "element-plus";
 
 /**
  * ${componentName} 图标组件
  */
 export default defineComponent({
 	name: "${componentName}",
-	components: {
-		ElIcon,
-	},
-	setup(_, { attrs }) {
-		return {
-			attrs,
-		};
-	},
 	render() {
 		return (
-			<ElIcon {...this.attrs} class="fa-icon fa-icon-${componentName} icon">
 ${svgContent
 	.split("\n")
-	.map((line) => `				${line}`)
+	.map((line) => `			${line}`)
 	.join("\n")}
-			</ElIcon>
 		);
 	},
 });
@@ -153,7 +142,6 @@ function buildSvgIcon(dir: string, writeDir: string): Plugin {
 			let iconImportContent = "";
 			let iconTypeContent = "";
 			let exportContent = "";
-			let typeDTSContent = "";
 
 			svgFiles.forEach((svg, idx) => {
 				writeTSXIcon(svg.iconName, svg.componentName, path.join(iconsPath, svg.iconName), svg.iconContent);
@@ -166,10 +154,7 @@ function buildSvgIcon(dir: string, writeDir: string): Plugin {
 				exportContent += `export * from "./${svg.iconName}";
 `;
 
-				typeDTSContent += `		${svg.componentName}: (typeof import("./"))["${svg.componentName}"];`;
-
 				if (idx + 1 < svgFiles.length) {
-					typeDTSContent += "\n";
 					iconTypeContent += "\n";
 				}
 			});
@@ -182,24 +167,6 @@ ${exportContent}
 export default [
 ${iconTypeContent}
 ] as Plugin[];
-`
-			);
-
-			fs.writeFileSync(
-				path.join(iconsPath, "index.d.ts"),
-				`// For this project development
-import "@vue/runtime-core";
-
-// GlobalComponents for Volar
-declare module "@vue/runtime-core" {
-	export interface GlobalComponents {
-${typeDTSContent}
-	}
-
-	// interface ComponentCustomProperties {}
-}
-
-export {};
 `
 			);
 		},
