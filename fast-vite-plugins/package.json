@@ -1,8 +1,15 @@
 {
 	"name": "fast-vite-plugins",
 	"author": "小方",
-	"version": "1.0.5",
+	"version": "1.0.7",
 	"description": "Fast Vite插件库.",
+	"keywords": [
+		"fast-vite-plugins",
+		"fast",
+		"vite",
+		"plugin library",
+		"plugin"
+	],
 	"license": "Apache-2.0",
 	"publishConfig": {
 		"access": "public"
@@ -15,38 +22,6 @@
 	"bugs": {
 		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins/issues"
 	},
-	"type": "module",
-	"dependencies": {
-		"rollup-plugin-external-globals": "^0.12.0",
-		"vite-plugin-externals": "^0.6.2"
-	},
-	"devDependencies": {
-		"@types/node": "^22.5.5",
-		"@typescript-eslint/eslint-plugin": "^8.6.0",
-		"@typescript-eslint/parser": "^8.6.0",
-		"eslint": "^8.57.0",
-		"eslint-config-prettier": "^9.1.0",
-		"eslint-define-config": "^2.1.0",
-		"eslint-plugin-import": "^2.30.0",
-		"eslint-plugin-prettier": "^5.2.1",
-		"eslint-plugin-vue": "^9.28.0",
-		"prettier": "^3.3.3",
-		"tsup": "^8.3.0",
-		"tsx": "^4.19.1",
-		"typescript": "^5.6.2",
-		"vite": "^5.4.6",
-		"vue-eslint-parser": "^9.4.3",
-		"vue-tsc": "^2.1.6"
-	},
-	"engines": {
-		"node": ">=20.0.0"
-	},
-	"keywords": [
-		"fast",
-		"vite",
-		"plugin library",
-		"plugin"
-	],
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -64,5 +39,15 @@
 		}
 	},
 	"unpkg": "dist/index.js",
-	"jsdelivr": "dist/index.js"
+	"jsdelivr": "dist/index.js",
+	"dependencies": {
+		"rollup-plugin-external-globals": "^0.12.0",
+		"vite-plugin-externals": "^0.6.2"
+	},
+	"devDependencies": {
+		"@types/node": "*"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
 }
