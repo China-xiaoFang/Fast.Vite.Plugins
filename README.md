@@ -46,7 +46,7 @@ export default defineConfig({
     cdnImport({
       // Development environment uses CDN path
       enableInDevMode: true,
-      prodUrl: "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",
+      prodUrl: "https://cdn.jsdelivr.net/npm/{name}{version}/{path}",
       modules: [
         {
           name: "vue",
