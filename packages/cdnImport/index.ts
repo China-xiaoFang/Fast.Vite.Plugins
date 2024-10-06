@@ -40,14 +40,18 @@ function renderUrl(
 		path: string;
 	}
 ): string {
-	const { path } = data;
+	const { path, version } = data;
 	if (isFullPath(path)) {
 		url = path;
 	}
-	return url
-		.replace(/\{name\}/g, data.name)
-		.replace(/\{version\}/g, data.version)
-		.replace(/\{path\}/g, path);
+	if (version) {
+		return url
+			.replace(/\{name\}/g, data.name)
+			.replace(/\{version\}/g, `@${version}`)
+			.replace(/\{path\}/g, path);
+	} else {
+		return url.replace(/\{name\}/g, data.name).replace(/\{path\}/g, `@${path}`);
+	}
 }
 
 function getModuleInfo(module: Module, prodUrl: string): Module & { pathList?: string[]; cssList?: string[] } {
@@ -106,7 +110,7 @@ function getModuleInfo(module: Module, prodUrl: string): Module & { pathList?: s
  * @returns
  */
 function cdnImport(options: CdnImportOptions): Plugin[] {
-	const { modules = [], prodUrl = "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}", enableInDevMode = false } = options;
+	const { modules = [], prodUrl = "https://cdn.jsdelivr.net/npm/{name}{version}/{path}", enableInDevMode = false } = options;
 
 	let isBuild = false;
 
