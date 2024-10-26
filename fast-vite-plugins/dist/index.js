@@ -1,54 +1,46 @@
-import f from"fs";import u from"path";var x=t=>{let e=[];return f.readdirSync(t,{withFileTypes:!0}).forEach(s=>{if(s.isDirectory())e.push(...x(u.join(t,s.name)));else{let i=s.name.replace(".svg",""),c=f.readFileSync(u.join(t,s.name),"utf-8").replace(/<\?xml.*?\?>/,"").replace(/<!DOCTYPE svg.*?>/,"").trimStart().trimEnd().replace(/<svg([^>+].*?)>/,(a,p)=>{let n=p.match(/viewBox="[^"]+"/),r=p.match(/width="(\d+)"/),m=p.match(/height="(\d+)"/),l=1024,g=1024;r&&(l=r[0]),m&&(g=m[0]);let y="";return n?y=n[0]:y=`viewBox="0 0 ${l} ${g}"`,`<svg xmlns="http://www.w3.org/2000/svg" ${y}>`});e.push({iconName:i,componentName:i.charAt(0).toUpperCase()+i.slice(1),iconContent:c})}}),e.sort((s,i)=>s.iconName<i.iconName?-1:s.iconName>i.iconName?1:0)},F=(t,e,o,s)=>{let i=u.join(o,"src");f.mkdirSync(o,{recursive:!0}),f.mkdirSync(i,{recursive:!0});let c=`import { defineComponent } from "vue";
+import d from"fs";import g from"path";var $=t=>{let e=[];return d.readdirSync(t,{withFileTypes:!0}).forEach(s=>{if(s.isDirectory())e.push(...$(g.join(t,s.name)));else{let r=s.name.replace(".svg",""),p=d.readFileSync(g.join(t,s.name),"utf-8").replace(/<\?xml.*?\?>/,"").replace(/<!DOCTYPE svg.*?>/,"").trimStart().trimEnd().replace(/<svg([^>+].*?)>/,(c,m)=>{let i=m.match(/viewBox="[^"]+"/),o=m.match(/width="(\d+)"/),a=m.match(/height="(\d+)"/),l=1024,u=1024;o&&(l=o[0]),a&&(u=a[0]);let f="";return i?f=i[0]:f=`viewBox="0 0 ${l} ${u}"`,`<svg xmlns="http://www.w3.org/2000/svg" ${f}>`});e.push({iconName:r,componentName:r.charAt(0).toUpperCase()+r.slice(1),iconContent:p})}}),e.sort((s,r)=>s.iconName<r.iconName?-1:s.iconName>r.iconName?1:0)},T=(t,e,n)=>{d.mkdirSync(e,{recursive:!0});let s=`import { defineComponent } from "vue";
+import { withInstall } from "fast-element-plus";
 
-/**
- * ${e} \u56FE\u6807\u7EC4\u4EF6
- */
-export default defineComponent({
-	name: "${e}",
-	render() {
-		return (
-${s.split(`
-`).map(n=>`			${n}`).join(`
+export const ${t} = withInstall(
+	defineComponent({
+		name: "${t}",
+		render() {
+			return (
+${n.split(`
+`).map(r=>`				${r}`).join(`
 `)}
-		);
-	},
-});
-`;f.writeFileSync(u.join(i,`${t}.tsx`),c);let a=`import { withInstall } from "fast-element-plus";
-import ${e}TSX from "./src/${t}.tsx";
+			);
+		},
+	})
+);
 
-export const ${e} = withInstall(${e}TSX);
-export default ${e};
-`;f.writeFileSync(u.join(o,"index.ts"),a);let p=`import type { TSXWithInstall } from "fast-element-plus";
-import type { default as ${e}TSX } from "./src/${t}";
-
-export declare const ${e}: TSXWithInstall<typeof ${e}TSX>;
-export default ${e};
-`;f.writeFileSync(u.join(o,"index.d.ts"),p)};function M(t,e){if(!t||!e)return;let o;return{name:"fast-vite-plugin-build-svg-icon",configResolved:s=>{o=s},buildStart(){let s=x(u.resolve(o.root,t)),i=u.resolve(o.root,e);f.mkdirSync(i,{recursive:!0});let c="",a="",p="";s.forEach((n,r)=>{F(n.iconName,n.componentName,u.join(i,n.iconName),n.iconContent),c+=`import { ${n.componentName} } from "./${n.iconName}";
-`,a+=`	${n.iconName},`,p+=`export * from "./${n.iconName}";
-`,r+1<s.length&&(a+=`
-`)}),f.writeFileSync(u.join(i,"index.ts"),`import type { DefineComponent } from "vue";
+export default ${t};
+`;d.writeFileSync(g.join(e,"index.tsx"),s)};function b(t,e){if(!t||!e)return;let n;return{name:"fast-vite-plugin-build-svg-icon",configResolved:s=>{n=s},buildStart(){let s=$(g.resolve(n.root,t)),r=g.resolve(n.root,e);d.mkdirSync(r,{recursive:!0});let p="",c="",m="";s.forEach((i,o)=>{T(i.componentName,g.join(r,i.iconName),i.iconContent),p+=`import { ${i.componentName} } from "./${i.iconName}";
+`,c+=`	${i.iconName},`,m+=`export * from "./${i.iconName}";
+`,o+1<s.length&&(c+=`
+`)}),d.writeFileSync(g.join(r,"index.ts"),`import type { DefineComponent } from "vue";
+${p}
+${m}
+export default [
 ${c}
-${p}
-export default [
-${a}
 ] as Plugin[];
-`)}}}import $ from"fs";import T from"path";import N from"rollup-plugin-external-globals";import{viteExternalsPlugin as j}from"vite-plugin-externals";var A=process.env.NODE_ENV==="development";function I(t){let e=process.cwd(),o=T.join(e,"node_modules",t,"package.json");return $.existsSync(o)?JSON.parse($.readFileSync(o,"utf8")).version:""}function S(t){return!!(t.startsWith("http:")||t.startsWith("https:")||t.startsWith("//"))}function C(t,e){let{path:o,version:s}=e;return S(o)&&(t=o),s?t.replace(/\{name\}/g,e.name).replace(/\{version\}/g,`@${s}`).replace(/\{path\}/g,o):t.replace(/\{name\}/g,e.name).replace(/\{path\}/g,`@${o}`)}function D(t,e){e=t.prodUrl||e;let o=t,s=t.version||I(o.name),i=[];Array.isArray(o.path)?i=o.path:i.push(o.path);let c={...o,version:s};i=i.map(n=>{if(!s&&!S(n))throw new Error(`modules: ${c.name} package.json file does not exist`);return C(e,{name:c.name,version:c.version,path:n})});let a=o.css||[];!Array.isArray(a)&&a&&(a=[a]);let p=Array.isArray(a)?a.map(n=>C(e,{name:c.name,version:c.version,path:n})):[];return{...o,version:s,pathList:i,cssList:p}}function L(t){let{modules:e=[],prodUrl:o="https://cdn.jsdelivr.net/npm/{name}{version}/{path}",enableInDevMode:s=!1}=t,i=!1,c=(Array.isArray(e)?e:[e]).map(n=>typeof n=="function"?n(o):n).map(n=>D(n,o)),a={};c.forEach(n=>{a[n.name]=n.var,Array.isArray(n.alias)&&n.alias.forEach(r=>{a[r]=n.var})});let p=[{name:"fast-vite-plugin-cdn-import",enforce:"pre",config(n,{command:r}){i=r==="build";let m={build:{rollupOptions:{plugins:[]}}};return i&&(m.build.rollupOptions.plugins=[N(a)]),m},transformIndexHtml(n){if(!i&&!s)return n;let r=[];return c.forEach(m=>{m.pathList.forEach(l=>{let g={src:l,crossorigin:"anonymous",...m?.attrs??{}};r.push({tag:"script",attrs:g})}),m.cssList.forEach(l=>{let g={href:l,rel:"stylesheet",crossorigin:"anonymous",...m?.attrs??{}};r.push({tag:"link",attrs:g})})}),r}}];return A&&s&&p.push(j(a,{enforce:"pre"})),p}import v from"fs";import w from"path";function _(t){if(t)return{name:"fast-vite-plugin-tsx-component-auto-import",buildStart(){let e=typeof t=="string"?t:t.dir,o=r=>r.charAt(0).toUpperCase()+r.slice(1),s=typeof t=="string"?o:t.formatter??o,i=v.readdirSync(e,{withFileTypes:!0});if(i?.length===0)return;let c=i.filter(r=>r.name!=="index.ts").map(r=>({componentName:s(r.name),fileName:r.name})).sort((r,m)=>r.componentName<m.componentName?-1:r.componentName>m.componentName?1:0),a="",p="",n="";c.forEach(({componentName:r,fileName:m},l)=>{a+=`import { ${r} } from "./${m}";
-`,p+=`export * from "./${m}";
-`,n+=`	${r},`,l+1<c.length&&(n+=`
-`)}),v.writeFileSync(w.join(e,"index.ts"),`import type { Plugin } from "vue";
-${a}
-${p}
+`)}}}import S from"fs";import A from"path";import D from"rollup-plugin-external-globals";import{viteExternalsPlugin as j}from"vite-plugin-externals";var I=process.env.NODE_ENV==="development";function E(t){let e=process.cwd(),n=A.join(e,"node_modules",t,"package.json");return S.existsSync(n)?JSON.parse(S.readFileSync(n,"utf8")).version:""}function N(t){return!!(t.startsWith("http:")||t.startsWith("https:")||t.startsWith("//"))}function w(t,e){let{path:n}=e;return N(n)&&(t=n),t.replace(/\{name\}/g,e.name).replace(/\{version\}/g,e.version).replace(/\{path\}/g,n)}function k(t,e){e=t.prodUrl||e;let n=t,s=t.version||E(n.name),r=[];Array.isArray(n.path)?r=n.path:r.push(n.path);let p={...n,version:s};r=r.map(i=>{if(!s&&!N(i))throw new Error(`modules: ${p.name} package.json file does not exist`);return w(e,{name:p.name,version:p.version,path:i})});let c=n.css||[];!Array.isArray(c)&&c&&(c=[c]);let m=Array.isArray(c)?c.map(i=>w(e,{name:p.name,version:p.version,path:i})):[];return{...n,version:s,pathList:r,cssList:m}}function W(t){let{modules:e=[],prodUrl:n="https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",enableInDevMode:s=!1,generateCssLinkTag:r,generateScriptTag:p}=t,c=!1,m=(Array.isArray(e)?e:[e]).map(a=>typeof a=="function"?a(n):a).map(a=>k(a,n)),i={};m.forEach(a=>{i[a.name]=a.var,Array.isArray(a.alias)&&a.alias.forEach(l=>{i[l]=a.var})});let o=[{name:"fast-vite-plugin-cdn-import",enforce:"pre",config(a,{command:l}){c=l==="build";let u={build:{rollupOptions:{plugins:[]}}};return c&&(u.build.rollupOptions.plugins=[D(i)]),u},transformIndexHtml(a){if(!c&&!s)return a;let l=[];return m.forEach(u=>{u.pathList.forEach(f=>{let y=p?.(u.name,f)||{},x={src:f,crossorigin:"anonymous",...u?.attrs??{},...y.attrs};l.push({tag:"script",attrs:x,...y})}),u.cssList.forEach(f=>{let y=r?.(u.name,f)||{},x={href:f,rel:"stylesheet",crossorigin:"anonymous",...u?.attrs??{},...y.attrs};l.push({tag:"link",attrs:x,...y})})}),l}}];return I&&s&&o.push(j(i,{enforce:"pre"})),o}import C from"fs";import P from"path";function Y(t){if(t)return{name:"fast-vite-plugin-tsx-component-auto-import",buildStart(){let e=typeof t=="string"?t:t.dir,n=o=>o.charAt(0).toUpperCase()+o.slice(1),s=typeof t=="string"?n:t.formatter??n,r=C.readdirSync(e,{withFileTypes:!0});if(r?.length===0)return;let p=r.filter(o=>o.name!=="index.ts").map(o=>({componentName:s(o.name),fileName:o.name})).sort((o,a)=>o.componentName<a.componentName?-1:o.componentName>a.componentName?1:0),c="",m="",i="";p.forEach(({componentName:o,fileName:a},l)=>{c+=`import { ${o} } from "./${a}";
+`,m+=`export * from "./${a}";
+`,i+=`	${o},`,l+1<p.length&&(i+=`
+`)}),C.writeFileSync(P.join(e,"index.ts"),`import type { Plugin } from "vue";
+${c}
+${m}
 export default [
-${n}
+${i}
 ] as Plugin[];
-`)}}}function V(t){if(t)return{name:"fast-vite-plugin-vue-component-auto-import",buildStart(){let e=typeof t=="string"?t:t.dir,o=r=>r.charAt(0).toUpperCase()+r.slice(1),s=typeof t=="string"?o:t.formatter??o,i=v.readdirSync(e,{withFileTypes:!0});if(i?.length===0)return;let c=i.filter(r=>r.name!=="index.ts").map(r=>({componentName:s(r.name),fileName:r.name})).sort((r,m)=>r.componentName<m.componentName?-1:r.componentName>m.componentName?1:0),a="",p="",n="";c.forEach(({componentName:r,fileName:m},l)=>{a+=`import ${r} from "./${m}/index.vue";
-`,p+=`export * from "./${m}/index.vue";
-`,n+=`	${r},`,l+1<c.length&&(n+=`
-`)}),v.writeFileSync(w.join(e,"index.ts"),`import type { DefineComponent } from "vue";
-${a}
-${p}
+`)}}}function Z(t){if(t)return{name:"fast-vite-plugin-vue-component-auto-import",buildStart(){let e=typeof t=="string"?t:t.dir,n=o=>o.charAt(0).toUpperCase()+o.slice(1),s=typeof t=="string"?n:t.formatter??n,r=C.readdirSync(e,{withFileTypes:!0});if(r?.length===0)return;let p=r.filter(o=>o.name!=="index.ts").map(o=>({componentName:s(o.name),fileName:o.name})).sort((o,a)=>o.componentName<a.componentName?-1:o.componentName>a.componentName?1:0),c="",m="",i="";p.forEach(({componentName:o,fileName:a},l)=>{c+=`import ${o} from "./${a}/index.vue";
+`,m+=`export * from "./${a}/index.vue";
+`,i+=`	${o},`,l+1<p.length&&(i+=`
+`)}),C.writeFileSync(P.join(e,"index.ts"),`import type { DefineComponent } from "vue";
+${c}
+${m}
 export default [
-${n}
+${i}
 ] as unknown as DefineComponent[];
-`)}}}import d from"fs";import P from"path";function h(t,e=2){return t.toString().padStart(e,"0")}function E(t){let e=t.getUTCFullYear(),o=h(t.getUTCMonth()+1),s=h(t.getUTCDate()),i=h(t.getUTCHours()),c=h(t.getUTCMinutes()),a=h(t.getUTCSeconds()),p=h(t.getUTCMilliseconds(),3);return`Z ${e}-${o}-${s} ${i}:${c}:${a}.${p}`}function q(t){let e;return{name:"fast-vite-plugin-version-update",configResolved:o=>{e=o},buildStart(){let s=E(new Date),i=e.publicDir,c=P.join(i,"version.json");d.existsSync(i)||d.mkdirSync(i);let a=JSON.stringify({version:`v${t}`,dateTime:s},null,4);d.writeFileSync(c,a);let p=P.join(e.base,"package.json");if(d.existsSync(p)){let n=JSON.parse(d.readFileSync(p,"utf-8"));n.version=t,d.writeFileSync(p,JSON.stringify(n,null,2),"utf-8")}}}}export{M as buildSvgIcon,L as cdnImport,x as findSvgFile,_ as tsxComponentAutoImport,q as versionUpdatePlugin,V as vueComponentAutoImport,F as writeTSXIcon};
+`)}}}import h from"fs";import F from"path";function v(t,e=2){return t.toString().padStart(e,"0")}function U(t){let e=t.getUTCFullYear(),n=v(t.getUTCMonth()+1),s=v(t.getUTCDate()),r=v(t.getUTCHours()),p=v(t.getUTCMinutes()),c=v(t.getUTCSeconds()),m=v(t.getUTCMilliseconds(),3);return`Z ${e}-${n}-${s} ${r}:${p}:${c}.${m}`}function K(t){let e;return{name:"fast-vite-plugin-version-update",configResolved:n=>{e=n},buildStart(){let s=U(new Date),r=e.publicDir,p=F.join(r,"version.json");h.existsSync(r)||h.mkdirSync(r);let c=JSON.stringify({version:`v${t}`,dateTime:s},null,4);h.writeFileSync(p,c);let m=F.join(e.base,"package.json");if(h.existsSync(m)){let i=JSON.parse(h.readFileSync(m,"utf-8"));i.version=t,h.writeFileSync(m,JSON.stringify(i,null,2),"utf-8")}}}}export{b as buildSvgIcon,W as cdnImport,$ as findSvgFile,Y as tsxComponentAutoImport,K as versionUpdatePlugin,Z as vueComponentAutoImport,T as writeTSXIcon};
 //# sourceMappingURL=index.js.map

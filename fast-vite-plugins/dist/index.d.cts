@@ -1,4 +1,4 @@
-import { Plugin } from 'vite';
+import { Plugin, HtmlTagDescriptor } from 'vite';
 
 /**
  * 查找 svg 文件
@@ -11,7 +11,7 @@ declare const findSvgFile: (dir: string) => {
 /**
  * 写入 TSX  图标
  */
-declare const writeTSXIcon: (iconName: string, componentName: string, iconDir: string, svgContent: string) => void;
+declare const writeTSXIcon: (componentName: string, iconDir: string, svgContent: string) => void;
 /**
  * 构建 svg 图标组件
  * @param dir svg 文件路径
@@ -65,6 +65,10 @@ interface CdnImportOptions {
      * 是否在开发模式启用，默认是 false
      */
     enableInDevMode?: boolean;
+    /** 生成 script 脚本标记 */
+    generateScriptTag?: (name: string, scriptUrl: string) => Omit<HtmlTagDescriptor, "tag" | "children">;
+    /** 生成 css link 脚本标记  */
+    generateCssLinkTag?: (name: string, cssUrl: string) => Omit<HtmlTagDescriptor, "tag" | "children">;
 }
 
 /**
