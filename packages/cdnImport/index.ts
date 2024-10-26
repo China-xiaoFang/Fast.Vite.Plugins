@@ -40,18 +40,14 @@ function renderUrl(
 		path: string;
 	}
 ): string {
-	const { path, version } = data;
+	const { path } = data;
 	if (isFullPath(path)) {
 		url = path;
 	}
-	if (version) {
-		return url
-			.replace(/\{name\}/g, data.name)
-			.replace(/\{version\}/g, `@${version}`)
-			.replace(/\{path\}/g, path);
-	} else {
-		return url.replace(/\{name\}/g, data.name).replace(/\{path\}/g, `@${path}`);
-	}
+	return url
+		.replace(/\{name\}/g, data.name)
+		.replace(/\{version\}/g, data.version)
+		.replace(/\{path\}/g, path);
 }
 
 function getModuleInfo(module: Module, prodUrl: string): Module & { pathList?: string[]; cssList?: string[] } {
@@ -110,7 +106,13 @@ function getModuleInfo(module: Module, prodUrl: string): Module & { pathList?: s
  * @returns
  */
 function cdnImport(options: CdnImportOptions): Plugin[] {
-	const { modules = [], prodUrl = "https://cdn.jsdelivr.net/npm/{name}{version}/{path}", enableInDevMode = false } = options;
+	const {
+		modules = [],
+		prodUrl = "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",
+		enableInDevMode = false,
+		generateCssLinkTag,
+		generateScriptTag,
+	} = options;
 
 	let isBuild = false;
 
@@ -161,27 +163,33 @@ function cdnImport(options: CdnImportOptions): Plugin[] {
 
 				data.forEach((v) => {
 					v.pathList.forEach((url) => {
+						const cusomize = generateScriptTag?.(v.name, url) || {};
 						const attrs = {
 							src: url,
 							crossorigin: "anonymous",
 							...(v?.attrs ?? {}),
+							...cusomize.attrs,
 						};
 
 						descriptors.push({
 							tag: "script",
 							attrs,
+							...cusomize,
 						});
 					});
 					v.cssList.forEach((url) => {
+						const cusomize = generateCssLinkTag?.(v.name, url) || {};
 						const attrs = {
 							href: url,
 							rel: "stylesheet",
 							crossorigin: "anonymous",
 							...(v?.attrs ?? {}),
+							...cusomize.attrs,
 						};
 						descriptors.push({
 							tag: "link",
 							attrs,
+							...cusomize,
 						});
 					});
 				});

@@ -1,3 +1,5 @@
+import { HtmlTagDescriptor } from "vite";
+
 export interface Module {
 	/**
 	 * 模块名称
@@ -46,4 +48,8 @@ export interface CdnImportOptions {
 	 * 是否在开发模式启用，默认是 false
 	 */
 	enableInDevMode?: boolean;
+	/** 生成 script 脚本标记 */
+	generateScriptTag?: (name: string, scriptUrl: string) => Omit<HtmlTagDescriptor, "tag" | "children">;
+	/** 生成 css link 脚本标记  */
+	generateCssLinkTag?: (name: string, cssUrl: string) => Omit<HtmlTagDescriptor, "tag" | "children">;
 }

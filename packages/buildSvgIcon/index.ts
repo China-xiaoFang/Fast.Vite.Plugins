@@ -72,49 +72,30 @@ const findSvgFile = (dir: string): { iconName: string; componentName: string; ic
 /**
  * 写入 TSX  图标
  */
-const writeTSXIcon = (iconName: string, componentName: string, iconDir: string, svgContent: string): void => {
-	const srcDir = path.join(iconDir, "src");
-
+const writeTSXIcon = (componentName: string, iconDir: string, svgContent: string): void => {
 	fs.mkdirSync(iconDir, { recursive: true });
-	fs.mkdirSync(srcDir, { recursive: true });
 
 	const iconContent = `import { defineComponent } from "vue";
+import { withInstall } from "fast-element-plus";
 
-/**
- * ${componentName} 图标组件
- */
-export default defineComponent({
-	name: "${componentName}",
-	render() {
-		return (
+export const ${componentName} = withInstall(
+	defineComponent({
+		name: "${componentName}",
+		render() {
+			return (
 ${svgContent
 	.split("\n")
-	.map((line) => `			${line}`)
+	.map((line) => `				${line}`)
 	.join("\n")}
-		);
-	},
-});
-`;
+			);
+		},
+	})
+);
 
-	fs.writeFileSync(path.join(srcDir, `${iconName}.tsx`), iconContent);
-
-	const indexContent = `import { withInstall } from "fast-element-plus";
-import ${componentName}TSX from "./src/${iconName}.tsx";
-
-export const ${componentName} = withInstall(${componentName}TSX);
 export default ${componentName};
 `;
 
-	fs.writeFileSync(path.join(iconDir, "index.ts"), indexContent);
-
-	const indexDTS = `import type { TSXWithInstall } from "fast-element-plus";
-import type { default as ${componentName}TSX } from "./src/${iconName}";
-
-export declare const ${componentName}: TSXWithInstall<typeof ${componentName}TSX>;
-export default ${componentName};
-`;
-
-	fs.writeFileSync(path.join(iconDir, "index.d.ts"), indexDTS);
+	fs.writeFileSync(path.join(iconDir, `index.tsx`), iconContent);
 };
 
 /**
@@ -144,7 +125,7 @@ function buildSvgIcon(dir: string, writeDir: string): Plugin {
 			let exportContent = "";
 
 			svgFiles.forEach((svg, idx) => {
-				writeTSXIcon(svg.iconName, svg.componentName, path.join(iconsPath, svg.iconName), svg.iconContent);
+				writeTSXIcon(svg.componentName, path.join(iconsPath, svg.iconName), svg.iconContent);
 
 				iconImportContent += `import { ${svg.componentName} } from "./${svg.iconName}";
 `;

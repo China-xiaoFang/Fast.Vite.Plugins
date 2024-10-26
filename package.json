@@ -1,8 +1,9 @@
 {
 	"name": "fast-vite-plugins",
 	"author": "小方",
-	"version": "1.0.9",
+	"version": "1.0.10",
 	"description": "Fast Vite插件库.",
+	"type": "module",
 	"keywords": [
 		"fast-vite-plugins",
 		"fast",
@@ -22,7 +23,6 @@
 	"bugs": {
 		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins/issues"
 	},
-	"type": "module",
 	"scripts": {
 		"check": "vue-tsc",
 		"build": "vue-tsc && tsup",
@@ -37,20 +37,18 @@
 	},
 	"devDependencies": {
 		"@types/node": "*",
-		"@typescript-eslint/eslint-plugin": "^8.6.0",
-		"@typescript-eslint/parser": "^8.6.0",
+		"@typescript-eslint/eslint-plugin": "^8.11.0",
+		"@typescript-eslint/parser": "^8.11.0",
 		"eslint": "^8.57.0",
 		"eslint-config-prettier": "^9.1.0",
 		"eslint-define-config": "^2.1.0",
-		"eslint-plugin-import": "^2.30.0",
+		"eslint-plugin-import": "^2.31.0",
 		"eslint-plugin-prettier": "^5.2.1",
-		"eslint-plugin-vue": "^9.28.0",
 		"prettier": "^3.3.3",
-		"tsup": "^8.3.0",
+		"tsup": "^8.3.5",
 		"tsx": "^4.19.1",
-		"typescript": "^5.6.2",
-		"vite": "^5.4.7",
-		"vue-eslint-parser": "^9.4.3",
+		"typescript": "^5.6.3",
+		"vite": "^5.4.10",
 		"vue-tsc": "^2.1.6"
 	},
 	"engines": {

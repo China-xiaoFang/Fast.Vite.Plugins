@@ -1,8 +1,9 @@
 {
 	"name": "fast-vite-plugins",
 	"author": "小方",
-	"version": "1.0.9",
+	"version": "1.0.10",
 	"description": "Fast Vite插件库.",
+	"type": "module",
 	"keywords": [
 		"fast-vite-plugins",
 		"fast",
@@ -22,7 +23,6 @@
 	"bugs": {
 		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins/issues"
 	},
-	"type": "module",
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
