@@ -39,36 +39,36 @@ import { defineConfig } from "vite";
 import { buildSvgIcon, cdnImport, tsxComponentAutoImport, vueComponentAutoImport, versionUpdatePlugin } from "fast-vite-plugins";
 
 export default defineConfig({
-  plugins: [
-    /** Building native SVG icons */
-    buildSvgIcon("./src/assets/icons", "./src/icons"),
-    /** CDN Import */
-    cdnImport({
-      // Development environment uses CDN path
-      enableInDevMode: true,
-      prodUrl: "https://cdn.jsdelivr.net/npm/{name}{version}/{path}",
-      modules: [
-        {
-          name: "vue",
-          var: "Vue",
-          version: "3.4.27",
-          path: "dist/vue.global.prod.min.js"
-        },
-        {
-          name: "vue-router",
-          var: "VueRouter",
-          path: "4.2.2/dist/vue-router.global.prod.min.js"
-        }
-      ]
-    }),
-    /** Automatic import and export of TSX components */
-    tsxComponentAutoImport("./src/components"),
-    /** Automatic import and export of VUE components */
-    vueComponentAutoImport("./src/components"),
-    /** Package version number update */
-    versionUpdatePlugin("1.0.0"),
-  ]
-})
+	plugins: [
+		/** Building native SVG icons, note that you need to install the @fast-china/utils package */
+		buildSvgIcon("./src/assets/icons", "./src/icons"),
+		/** CDN Import */
+		cdnImport({
+			// Development environment uses CDN path
+			enableInDevMode: true,
+			prodUrl: "https://cdn.jsdelivr.net/npm/{name}{version}/{path}",
+			modules: [
+				{
+					name: "vue",
+					var: "Vue",
+					version: "3.4.27",
+					path: "dist/vue.global.prod.min.js",
+				},
+				{
+					name: "vue-router",
+					var: "VueRouter",
+					path: "4.2.2/dist/vue-router.global.prod.min.js",
+				},
+			],
+		}),
+		/** Automatic import and export of TSX components */
+		tsxComponentAutoImport("./src/components"),
+		/** Automatic import and export of VUE components */
+		vueComponentAutoImport("./src/components"),
+		/** Package version number update */
+		versionUpdatePlugin("1.0.0"),
+	],
+});
 ```
 
 ## Update log

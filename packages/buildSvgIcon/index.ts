@@ -75,27 +75,27 @@ const findSvgFile = (dir: string): { iconName: string; componentName: string; ic
 const writeTSXIcon = (componentName: string, iconDir: string, svgContent: string): void => {
 	fs.mkdirSync(iconDir, { recursive: true });
 
-	const iconContent = `import { defineComponent } from "vue";
-import { withInstall } from "fast-element-plus";
+	const componentContent = `import { defineComponent } from "vue";
 
-export const ${componentName} = withInstall(
-	defineComponent({
-		name: "${componentName}",
-		render() {
-			return (
+/**
+ * ${componentName} 图标组件
+ */
+export const ${componentName} = defineComponent({
+	name: "${componentName}",
+	render() {
+		return (
 ${svgContent
 	.split("\n")
-	.map((line) => `				${line}`)
+	.map((line) => `			${line}`)
 	.join("\n")}
-			);
-		},
-	})
-);
+		);
+	},
+});
 
 export default ${componentName};
 `;
 
-	fs.writeFileSync(path.join(iconDir, `index.tsx`), iconContent);
+	fs.writeFileSync(path.join(iconDir, "index.tsx"), componentContent);
 };
 
 /**
@@ -130,7 +130,7 @@ function buildSvgIcon(dir: string, writeDir: string): Plugin {
 				iconImportContent += `import { ${svg.componentName} } from "./${svg.iconName}";
 `;
 
-				iconTypeContent += `	${svg.iconName},`;
+				iconTypeContent += `	${svg.componentName},`;
 
 				exportContent += `export * from "./${svg.iconName}";
 `;
@@ -147,7 +147,7 @@ ${iconImportContent}
 ${exportContent}
 export default [
 ${iconTypeContent}
-] as Plugin[];
+] as unknown as DefineComponent[];
 `
 			);
 		},
