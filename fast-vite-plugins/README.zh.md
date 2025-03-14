@@ -39,36 +39,36 @@ import { defineConfig } from "vite";
 import { buildSvgIcon, cdnImport, tsxComponentAutoImport, vueComponentAutoImport, versionUpdatePlugin } from "fast-vite-plugins";
 
 export default defineConfig({
-  plugins: [
-    /** 构建本地 SVG 图标 */
-    buildSvgIcon("./src/assets/icons", "./src/icons"),
-    /** CDN 导入 */
-    cdnImport({
-      // 开发环境使用 CDN 路径
-      enableInDevMode: true,
-      prodUrl: "https://cdn.jsdelivr.net/npm/{name}{version}/{path}",
-      modules: [
-        {
-          name: "vue",
-          var: "Vue",
-          version: "3.4.27",
-          path: "dist/vue.global.prod.min.js"
-        },
-        {
-          name: "vue-router",
-          var: "VueRouter",
-          path: "4.2.2/dist/vue-router.global.prod.min.js"
-        }
-      ]
-    }),
-    /** TSX 组件自动导入导出 */
-    tsxComponentAutoImport("./src/components"),
-    /** VUE 组件自动导入导出 */
-    vueComponentAutoImport("./src/components"),
-    /** 打包版本号更新 */
-    versionUpdatePlugin("1.0.0"),
-  ]
-})
+	plugins: [
+		/** 构建本地 SVG 图标，注意需要安装 @fast-china/utils 包 */
+		buildSvgIcon("./src/assets/icons", "./src/icons"),
+		/** CDN 导入 */
+		cdnImport({
+			// 开发环境使用 CDN 路径
+			enableInDevMode: true,
+			prodUrl: "https://cdn.jsdelivr.net/npm/{name}{version}/{path}",
+			modules: [
+				{
+					name: "vue",
+					var: "Vue",
+					version: "3.4.27",
+					path: "dist/vue.global.prod.min.js",
+				},
+				{
+					name: "vue-router",
+					var: "VueRouter",
+					path: "4.2.2/dist/vue-router.global.prod.min.js",
+				},
+			],
+		}),
+		/** TSX 组件自动导入导出 */
+		tsxComponentAutoImport("./src/components"),
+		/** VUE 组件自动导入导出 */
+		vueComponentAutoImport("./src/components"),
+		/** 打包版本号更新 */
+		versionUpdatePlugin("1.0.0"),
+	],
+});
 ```
 
 ## 更新日志

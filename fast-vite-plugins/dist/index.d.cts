@@ -94,13 +94,13 @@ interface AutoImportOptions {
 /**
  * TSX组件自动导入
  * @description 只会生成安装文件
- * @param dir 组件文件夹路径
+ * @param options 组件文件夹路径
  */
 declare function tsxComponentAutoImport(options: string | AutoImportOptions): Plugin;
 /**
  * VUE组件自动导入
  * @description 只会生成安装文件
- * @param dir 组件文件夹路径
+ * @param options 组件文件夹路径
  */
 declare function vueComponentAutoImport(options: string | AutoImportOptions): Plugin;
 

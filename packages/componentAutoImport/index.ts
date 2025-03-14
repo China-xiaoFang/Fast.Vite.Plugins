@@ -6,7 +6,7 @@ import type { AutoImportOptions } from "./type";
 /**
  * TSX组件自动导入
  * @description 只会生成安装文件
- * @param dir 组件文件夹路径
+ * @param options 组件文件夹路径
  */
 function tsxComponentAutoImport(options: string | AutoImportOptions): Plugin {
 	if (!options) return;
@@ -84,7 +84,7 @@ ${typeContent}
 /**
  * VUE组件自动导入
  * @description 只会生成安装文件
- * @param dir 组件文件夹路径
+ * @param options 组件文件夹路径
  */
 function vueComponentAutoImport(options: string | AutoImportOptions): Plugin {
 	if (!options) return;
