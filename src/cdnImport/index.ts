@@ -1,9 +1,9 @@
 import fs from "fs";
 import path from "path";
 import externalGlobals from "rollup-plugin-external-globals";
-import type { HtmlTagDescriptor, Plugin, UserConfig } from "vite";
 import { viteExternalsPlugin } from "vite-plugin-externals";
 import type { CdnImportOptions, Module } from "./type";
+import type { HtmlTagDescriptor, Plugin, UserConfig } from "vite";
 
 const isDev = process.env.NODE_ENV === "development";
 

@@ -2,7 +2,7 @@ import { defineConfig } from "tsup";
 
 export default defineConfig({
 	// 入口文件
-	entry: ["packages/index.ts"],
+	entry: ["src/index.ts"],
 	// 输出目录
 	outDir: "fast-vite-plugins/dist",
 	// 输出格式

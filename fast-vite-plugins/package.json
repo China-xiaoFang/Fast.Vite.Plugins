@@ -1,7 +1,6 @@
 {
 	"name": "fast-vite-plugins",
-	"author": "小方",
-	"version": "1.0.11",
+	"version": "1.0.12",
 	"description": "Fast Vite插件库.",
 	"type": "module",
 	"keywords": [
@@ -12,20 +11,15 @@
 		"plugin"
 	],
 	"license": "Apache-2.0",
-	"publishConfig": {
-		"access": "public"
-	},
 	"homepage": "https://fastdotnet.com",
+	"bugs": {
+		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins/issues"
+	},
 	"repository": {
 		"type": "git",
 		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins"
 	},
-	"bugs": {
-		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins/issues"
-	},
-	"main": "dist/index.js",
-	"module": "dist/index.js",
-	"types": "dist/index.d.ts",
+	"author": "小方",
 	"files": [
 		"./Fast.png",
 		"./LICENSE",
@@ -33,20 +27,26 @@
 		"./README.zh.md",
 		"./dist"
 	],
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"exports": {
 		".": {
-			"import": "./dist/index.js",
-			"require": "./dist/index.cjs"
+			"require": "./dist/index.cjs",
+			"import": "./dist/index.js"
 		}
 	},
 	"unpkg": "dist/index.js",
 	"jsdelivr": "dist/index.js",
+	"publishConfig": {
+		"access": "public"
+	},
 	"dependencies": {
 		"rollup-plugin-external-globals": "^0.12.0",
 		"vite-plugin-externals": "^0.6.2"
 	},
 	"devDependencies": {
-		"@types/node": "*"
+		"@types/node": "latest"
 	},
 	"engines": {
 		"node": ">=20.0.0"
