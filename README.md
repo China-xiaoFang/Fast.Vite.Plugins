@@ -35,8 +35,8 @@ pnpm install fast-vite-plugins -D
 In `vite.config.ts`
 
 ```typescript
+import { buildSvgIcon, cdnImport, tsxComponentAutoImport, versionUpdatePlugin, vueComponentAutoImport } from "fast-vite-plugins";
 import { defineConfig } from "vite";
-import { buildSvgIcon, cdnImport, tsxComponentAutoImport, vueComponentAutoImport, versionUpdatePlugin } from "fast-vite-plugins";
 
 export default defineConfig({
 	plugins: [

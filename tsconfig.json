@@ -1,42 +1,43 @@
 {
 	"compilerOptions": {
-		"target": "ESNext",
-		/** https://cn.vitejs.dev/guide/features.html#typescript-compiler-options */
-		"useDefineForClassFields": true,
-		"module": "ESNext",
-		"moduleResolution": "Node",
-		/** TS 严格模式 */
-		"strict": true,
-		"jsx": "preserve",
-		"importHelpers": true,
-		"experimentalDecorators": true,
-		"allowSyntheticDefaultImports": true,
-		"sourceMap": true,
-		"resolveJsonModule": true,
-		/** https://cn.vitejs.dev/guide/features.html#typescript-compiler-options */
-		"isolatedModules": true,
-		"esModuleInterop": true,
 		/* 项目是否需要编译 Enable project compilation */
 		"composite": false,
+		"target": "ESNext",
+		"jsx": "preserve",
 		"lib": ["ESNext", "DOM"],
-		"skipLibCheck": true,
+		/** https://cn.vitejs.dev/guide/features.html#typescript-compiler-options */
+		"useDefineForClassFields": true,
+		"experimentalDecorators": true,
+		/** baseUrl 用来告诉编译器到哪里去查找模块，使用非相对模块时必须配置此项 */
+		"baseUrl": "./",
+		"module": "ESNext",
+		"moduleResolution": "Node",
+		"resolveJsonModule": true,
 		"allowImportingTsExtensions": true,
-		"noEmit": true,
 		/* 报告.js文件中的错误  Report errors in .js files. */
 		"checkJs": false,
-		/* 编译是否需要移除注释信息 Do not emit comments to output. */
-		"removeComments": false,
-		/* 如果编译器无法根据变量的使用来判断类型时，将用 any 类型代替 Raise error on expressions and declarations with an implied 'any' type. */
-		"noImplicitAny": false,
-		"declaration": true,
+		/** TS 严格模式 */
+		"strict": true,
 		/* 启用严格null检查 Enable strict null checks. */
 		"strictNullChecks": false,
+		/* 如果编译器无法根据变量的使用来判断类型时，将用 any 类型代替 Raise error on expressions and declarations with an implied 'any' type. */
+		"noImplicitAny": false,
+		/* 报告值为undefined的错误 Include 'undefined' in index signature results */
+		"noUncheckedIndexedAccess": false,
 		/* 报告没有使用的变量错误的地方 Report errors on unused locals. */
 		"noUnusedLocals": true,
-		/* 报告值为undefined的错误 Include 'undefined' in index signature results */
-		"noUncheckedIndexedAccess": false
+		"declaration": true,
+		"importHelpers": true,
+		"noEmit": true,
+		/* 编译是否需要移除注释信息 Do not emit comments to output. */
+		"removeComments": false,
+		"sourceMap": true,
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		/** https://cn.vitejs.dev/guide/features.html#typescript-compiler-options */
+		"isolatedModules": true,
+		"skipLibCheck": true
 	},
-	"include": ["packages"],
 	/** 编译器默认排除的编译文件 */
 	"exclude": ["node_modules", "fast-vite-plugins"]
 }

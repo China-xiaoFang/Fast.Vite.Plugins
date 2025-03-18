@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import type { Plugin } from "vite";
 import type { AutoImportOptions } from "./type";
+import type { Plugin } from "vite";
 
 /**
  * TSX组件自动导入

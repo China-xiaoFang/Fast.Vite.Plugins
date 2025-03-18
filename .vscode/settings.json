@@ -41,7 +41,7 @@
 	// Enable file nesting
 	"explorer.fileNesting.enabled": true,
 	"explorer.fileNesting.patterns": {
-		".prettierrc.cjs": ".prettierignore, .eslintignore, .eslintrc.cjs",
+		".prettierrc.cjs": ".prettierignore, .eslintignore, .eslintrc.cjs, eslint.config.mjs",
 		"package.json": ".npmrc, .nvmrc, pnpm-lock.yaml, pnpm-workspace.yaml",
 		"vite.config.*": "vite.*"
 	}
