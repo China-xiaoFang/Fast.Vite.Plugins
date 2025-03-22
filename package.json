@@ -1,6 +1,6 @@
 {
 	"name": "fast-vite-plugins",
-	"version": "1.0.12",
+	"version": "1.0.13",
 	"description": "Fast Vite插件库.",
 	"type": "module",
 	"keywords": [
@@ -36,9 +36,9 @@
 		"vite-plugin-externals": "^0.6.2"
 	},
 	"devDependencies": {
-		"@fast-china/eslint-config": "^1.0.25",
+		"@fast-china/eslint-config": "^1.0.26",
 		"@types/node": "latest",
-		"eslint": "^9.22.0",
+		"eslint": "^9.23.0",
 		"prettier": "^3.5.3",
 		"tsup": "^8.4.0",
 		"typescript": "^5.8.2",

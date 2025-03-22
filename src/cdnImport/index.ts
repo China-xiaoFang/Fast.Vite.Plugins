@@ -100,19 +100,16 @@ function getModuleInfo(module: Module, prodUrl: string): Module & { pathList?: s
 	};
 }
 
+const cdnJsDelivrUrl = "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}";
+const cdnUnpkgUrl = "https://unpkg.com/{package}@{version}/{path}";
+
 /**
  * CDN 导入
  * @param options
  * @returns
  */
 function cdnImport(options: CdnImportOptions): Plugin[] {
-	const {
-		modules = [],
-		prodUrl = "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",
-		enableInDevMode = false,
-		generateCssLinkTag,
-		generateScriptTag,
-	} = options;
+	const { modules = [], prodUrl = cdnJsDelivrUrl, enableInDevMode = false, generateCssLinkTag, generateScriptTag } = options;
 
 	let isBuild = false;
 
@@ -210,4 +207,4 @@ function cdnImport(options: CdnImportOptions): Plugin[] {
 	return plugins;
 }
 
-export { cdnImport };
+export { cdnImport, cdnJsDelivrUrl, cdnUnpkgUrl };

@@ -71,6 +71,8 @@ interface CdnImportOptions {
     generateCssLinkTag?: (name: string, cssUrl: string) => Omit<HtmlTagDescriptor, "tag" | "children">;
 }
 
+declare const cdnJsDelivrUrl = "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}";
+declare const cdnUnpkgUrl = "https://unpkg.com/{package}@{version}/{path}";
 /**
  * CDN 导入
  * @param options
@@ -111,4 +113,4 @@ declare function vueComponentAutoImport(options: string | AutoImportOptions): Pl
  */
 declare function versionUpdatePlugin(version: string): Plugin;
 
-export { type AutoImportOptions, type CdnImportOptions, type GetModuleFunc, type Module, buildSvgIcon, cdnImport, findSvgFile, tsxComponentAutoImport, versionUpdatePlugin, vueComponentAutoImport, writeTSXIcon };
+export { type AutoImportOptions, type CdnImportOptions, type GetModuleFunc, type Module, buildSvgIcon, cdnImport, cdnJsDelivrUrl, cdnUnpkgUrl, findSvgFile, tsxComponentAutoImport, versionUpdatePlugin, vueComponentAutoImport, writeTSXIcon };
