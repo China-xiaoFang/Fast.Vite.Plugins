@@ -1,6 +1,6 @@
 {
 	"name": "fast-vite-plugins",
-	"version": "1.0.13",
+	"version": "1.0.14",
 	"description": "Fast Vite插件库.",
 	"type": "module",
 	"keywords": [
@@ -42,7 +42,7 @@
 		"access": "public"
 	},
 	"dependencies": {
-		"rollup-plugin-external-globals": "^0.12.0",
+		"rollup-plugin-external-globals": "^0.13.0",
 		"vite-plugin-externals": "^0.6.2"
 	},
 	"devDependencies": {
