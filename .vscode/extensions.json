@@ -1,10 +1,16 @@
 {
-  "recommendations": [
-    "editorconfig.editorconfig",
-    "esbenp.prettier-vscode",
-    "dbaeumer.vscode-eslint",
-    "Vue.volar",
-    "maggie.eslint-rules-zh-plugin",
-    "PKief.material-icon-theme"
-  ]
+	"recommendations": [
+		"dbaeumer.vscode-eslint",
+		"editorconfig.editorconfig",
+		"esbenp.prettier-vscode",
+		"heybourn.headwind",
+		"maggie.eslint-rules-zh-plugin",
+		"mikestead.dotenv",
+		"PKief.material-icon-theme",
+		"Syler.sass-indented",
+		"Vue.volar",
+		"Wiensss.region-highlighter",
+		"Zignd.html-css-class-completion",
+		"streetsidesoftware.code-spell-checker",
+	]
 }
