@@ -1,4 +1,4 @@
-**中** | [En](https://github.com/China-xiaoFang/fast.vite.plugins)
+**中** | [En](https://github.com/China-xiaoFang/Fast.Vite.Plugins)
 
 <h1 align="center">Fast.Vite.Plugins</h1>
 
@@ -10,7 +10,7 @@
   <a href="https://www.npmjs.com/package/fast-vite-plugins">
     <img src="https://img.shields.io/npm/v/fast-vite-plugins?color=orange&label=" alt="version" />
   </a>
-  <a href="https://gitee.com/China-xiaoFang/fast.vite.plugins/blob/master/LICENSE">
+  <a href="https://gitee.com/FastDotnet/Fast.Vite.Plugins/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/fast-vite-plugins" alt="license" />
   </a>
 </p>
@@ -73,11 +73,11 @@ export default defineConfig({
 
 ## 更新日志
 
-更新日志 [点击查看](https://gitee.com/China-xiaoFang/fast.vite.plugins/commits/master)
+更新日志 [点击查看](https://gitee.com/Fast.Vite.Plugins/commits/master)
 
 ## 协议
 
-[Fast.Vite.Plugins](https://gitee.com/China-xiaoFang/fast.vite.plugins) 遵循 [Apache-2.0](https://gitee.com/China-xiaoFang/fast.vite.plugins/blob/master/LICENSE) 开源协议，欢迎大家提交 `PR` 或 `Issue`。
+[Fast.Vite.Plugins](https://gitee.com/Fast.Vite.Plugins) 遵循 [Apache-2.0](https://gitee.com/Fast.Vite.Plugins/blob/master/LICENSE) 开源协议，欢迎大家提交 `PR` 或 `Issue`。
 
 ```
 Apache开源许可证
