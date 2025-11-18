@@ -2,8 +2,11 @@
 	"compilerOptions": {
 		/* 项目是否需要编译 Enable project compilation */
 		"composite": false,
+		/* 编译目标版本，ESNext 表示使用最新的 ECMAScript 特性 */
 		"target": "ESNext",
+		/* JSX 的编译方式 */
 		"jsx": "preserve",
+		/* 编译时包含的库类型 */
 		"lib": ["ESNext", "DOM"],
 		/** https://cn.vitejs.dev/guide/features.html#typescript-compiler-options */
 		"useDefineForClassFields": true,
@@ -11,8 +14,8 @@
 		/** baseUrl 用来告诉编译器到哪里去查找模块，使用非相对模块时必须配置此项 */
 		"baseUrl": "./",
 		"module": "ESNext",
-		"moduleResolution": "Node",
-		"resolveJsonModule": true,
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
 		"allowImportingTsExtensions": true,
 		/* 报告.js文件中的错误  Report errors in .js files. */
 		"checkJs": false,

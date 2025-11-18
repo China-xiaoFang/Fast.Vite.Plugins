@@ -1,6 +1,6 @@
 {
 	"name": "fast-vite-plugins",
-	"version": "1.0.15",
+	"version": "1.0.16",
 	"description": "Fast Vite插件库.",
 	"type": "module",
 	"keywords": [
@@ -13,11 +13,11 @@
 	"license": "Apache-2.0",
 	"homepage": "https://fastdotnet.com",
 	"bugs": {
-		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins/issues"
+		"url": "https://gitee.com/FastDotnet/fast.vite.plugins/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://gitee.com/China-xiaoFang/fast.vite.plugins"
+		"url": "https://gitee.com/FastDotnet/fast.vite.plugins"
 	},
 	"author": "小方",
 	"publishConfig": {
@@ -42,8 +42,8 @@
 		"prettier": "^3",
 		"tsup": "^8",
 		"typescript": "^5",
-		"vite": "^6",
-		"vue-tsc": "^2"
+		"vite": "^7",
+		"vue-tsc": "^3"
 	},
 	"engines": {
 		"node": ">=20.0.0"

@@ -1,4 +1,4 @@
-[中](https://gitee.com/China-xiaoFang/fast.vite.plugins) | **En**
+[中](https://gitee.com/FastDotnet/Fast.Vite.Plugins) | **En**
 
 <h1 align="center">Fast.Vite.Plugins</h1>
 
@@ -10,7 +10,7 @@
   <a href="https://www.npmjs.com/package/fast-vite-plugins">
     <img src="https://img.shields.io/npm/v/fast-vite-plugins?color=orange&label=" alt="version" />
   </a>
-  <a href="https://gitee.com/China-xiaoFang/fast.vite.plugins/blob/master/LICENSE">
+  <a href="https://gitee.com/FastDotnet/Fast.Vite.Plugins/blob/master/LICENSE">
     <img src="https://img.shields.io/npm/l/fast-vite-plugins" alt="license" />
   </a>
 </p>
@@ -73,11 +73,11 @@ export default defineConfig({
 
 ## Update log
 
-Update log [Click to view](https://gitee.com/China-xiaoFang/fast.vite.plugins/commits/master)
+Update log [Click to view](https://gitee.com/FastDotnet/Fast.Vite.Plugins/commits/master)
 
 ## Protocol
 
-[Fast.Vite.Plugins](https://gitee.com/China-xiaoFang/fast.vite.plugins) complies with the [Apache-2.0](https://gitee.com/China-xiaoFang/fast.vite.plugins/blob/master/LICENSE) open source agreement. Welcome to submit `PR` or `Issue`.
+[Fast.Vite.Plugins](https://gitee.com/FastDotnet/Fast.Vite.Plugins) complies with the [Apache-2.0](https://gitee.com/FastDotnet/Fast.Vite.Plugins/blob/master/LICENSE) open source agreement. Welcome to submit `PR` or `Issue`.
 
 ```
 Apache Open Source License
