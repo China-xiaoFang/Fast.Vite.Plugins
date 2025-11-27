@@ -3,7 +3,7 @@
 <h1 align="center">Fast.Vite.Plugins</h1>
 
 <p align="center">
-  A plugin library for building projects based on <code>Vite</code>.
+  <code>Fast</code> platform An plugin library built based on <code>Vite</code>.
 </p>
 
 <p align="center">
