@@ -3,7 +3,7 @@
 <h1 align="center">Fast.Vite.Plugins</h1>
 
 <p align="center">
-  Fast 平台下基于 <code>Vite</code> 构建项目的插件库。
+  <code>Fast</code> 平台下基于 <code>Vite</code> 构建项目的插件库。
 </p>
 
 <p align="center">
