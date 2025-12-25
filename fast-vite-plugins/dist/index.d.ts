@@ -83,8 +83,34 @@ declare function cdnImport(options: CdnImportOptions): Plugin[];
 interface AutoImportOptions {
     /**
      * 文件夹
+     * @default "src/components"
      */
-    dir: string;
+    dir?: string;
+    /**
+     * 导出声明文件路径
+     * @default "src/components/index.ts"
+     */
+    exportPath?: string;
+    /**
+     * 是否生成类型声明文件
+     * @default true
+     */
+    dts?: boolean;
+    /**
+     * 类型声明文件路径
+     * @default "types/component.d.ts"
+     */
+    dtsPath?: string;
+    /**
+     * 是否深度扫描子目录
+     * @default true
+     */
+    deep?: boolean;
+    /**
+     * 文件扩展名
+     * @default ["vue","tsx","jsx"]
+     */
+    extensions?: string[];
     /**
      * 自定义组件名称
      * @param fName 文件夹名称
@@ -94,17 +120,10 @@ interface AutoImportOptions {
 }
 
 /**
- * TSX组件自动导入
- * @description 只会生成安装文件
- * @param options 组件文件夹路径
+ * 组件自动导入
+ * @param options 选项
  */
-declare function tsxComponentAutoImport(options: string | AutoImportOptions): Plugin;
-/**
- * VUE组件自动导入
- * @description 只会生成安装文件
- * @param options 组件文件夹路径
- */
-declare function vueComponentAutoImport(options: string | AutoImportOptions): Plugin;
+declare function componentAutoImport(options?: AutoImportOptions): Plugin;
 
 /**
  * 版本更新插件
@@ -113,4 +132,4 @@ declare function vueComponentAutoImport(options: string | AutoImportOptions): Pl
  */
 declare function versionUpdatePlugin(version: string): Plugin;
 
-export { type AutoImportOptions, type CdnImportOptions, type GetModuleFunc, type Module, buildSvgIcon, cdnImport, cdnJsDelivrUrl, cdnUnpkgUrl, findSvgFile, tsxComponentAutoImport, versionUpdatePlugin, vueComponentAutoImport, writeTSXIcon };
+export { type AutoImportOptions, type CdnImportOptions, type GetModuleFunc, type Module, buildSvgIcon, cdnImport, cdnJsDelivrUrl, cdnUnpkgUrl, componentAutoImport, findSvgFile, versionUpdatePlugin, writeTSXIcon };
