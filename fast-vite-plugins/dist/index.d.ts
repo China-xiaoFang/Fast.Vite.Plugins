@@ -125,6 +125,41 @@ interface AutoImportOptions {
  */
 declare function componentAutoImport(options?: AutoImportOptions): Plugin;
 
+interface BuildRouterPathOptions {
+    /**
+     * 文件夹
+     * @default "src/views"
+     */
+    dir?: string;
+    /**
+     * 导出声明文件路径
+     * @default "src/router/index.json"
+     */
+    exportPath?: string;
+    /**
+     * 是否深度扫描子目录
+     * @default true
+     */
+    deep?: boolean;
+    /**
+     * 文件扩展名
+     * @default ["vue","tsx","jsx"]
+     */
+    extensions?: string[];
+    /**
+     * 自定义组件名称
+     * @param fName 文件夹名称
+     * @returns
+     */
+    formatter?: (fName: string) => string;
+}
+
+/**
+ * 路由路径生成
+ * @param options 选项
+ */
+declare function buildRouterPath(options?: BuildRouterPathOptions): Plugin;
+
 /**
  * 版本更新插件
  * @param version 不要携带 'v'，示例：1.0.0
@@ -132,4 +167,4 @@ declare function componentAutoImport(options?: AutoImportOptions): Plugin;
  */
 declare function versionUpdatePlugin(version: string): Plugin;
 
-export { type AutoImportOptions, type CdnImportOptions, type GetModuleFunc, type Module, buildSvgIcon, cdnImport, cdnJsDelivrUrl, cdnUnpkgUrl, componentAutoImport, findSvgFile, versionUpdatePlugin, writeTSXIcon };
+export { type AutoImportOptions, type BuildRouterPathOptions, type CdnImportOptions, type GetModuleFunc, type Module, buildRouterPath, buildSvgIcon, cdnImport, cdnJsDelivrUrl, cdnUnpkgUrl, componentAutoImport, findSvgFile, versionUpdatePlugin, writeTSXIcon };

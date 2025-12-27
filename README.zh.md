@@ -42,6 +42,20 @@ export default defineConfig({
 	plugins: [
 		/** 构建本地 SVG 图标，注意需要安装 @fast-china/utils 包 */
 		buildSvgIcon("./src/assets/icons", "./src/icons"),
+		/** 组件自动导入 */
+		componentAutoImport({
+			dir: "src/components",
+			exportPath: "src/components/index.ts",
+			dts: true,
+			dtsPath: "types/component.d.ts",
+		}),
+		/** 路由路径生成 */
+		buildRouterPath({
+			dir: "src/views",
+			exportPath: "src/router/index.json",
+		}),
+		/** 打包版本号更新 */
+		versionUpdatePlugin("1.0.0"),
 		/** CDN 导入 */
 		cdnImport({
 			// 开发环境使用 CDN 路径
@@ -61,12 +75,6 @@ export default defineConfig({
 				},
 			],
 		}),
-		/** TSX 组件自动导入导出 */
-		tsxComponentAutoImport("./src/components"),
-		/** VUE 组件自动导入导出 */
-		vueComponentAutoImport("./src/components"),
-		/** 打包版本号更新 */
-		versionUpdatePlugin("1.0.0"),
 	],
 });
 ```

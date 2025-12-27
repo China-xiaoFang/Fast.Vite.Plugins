@@ -42,6 +42,20 @@ export default defineConfig({
 	plugins: [
 		/** Building native SVG icons, note that you need to install the @fast-china/utils package */
 		buildSvgIcon("./src/assets/icons", "./src/icons"),
+		/** Automatic component import */
+		componentAutoImport({
+			dir: "src/components",
+			exportPath: "src/components/index.ts",
+			dts: true,
+			dtsPath: "types/component.d.ts",
+		}),
+		/** Routing path generation */
+		buildRouterPath({
+			dir: "src/views",
+			exportPath: "src/router/index.json",
+		}),
+		/** Package version number update */
+		versionUpdatePlugin("1.0.0"),
 		/** CDN Import */
 		cdnImport({
 			// Development environment uses CDN path
@@ -61,12 +75,6 @@ export default defineConfig({
 				},
 			],
 		}),
-		/** Automatic import and export of TSX components */
-		tsxComponentAutoImport("./src/components"),
-		/** Automatic import and export of VUE components */
-		vueComponentAutoImport("./src/components"),
-		/** Package version number update */
-		versionUpdatePlugin("1.0.0"),
 	],
 });
 ```

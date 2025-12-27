@@ -1,9 +1,9 @@
-**中** | [En](https://github.com/China-xiaoFang/Fast.Vite.Plugins)
+**中** | [En](https://github.com/China-xiaoFang/fast.vite.plugins)
 
 <h1 align="center">Fast.Vite.Plugins</h1>
 
 <p align="center">
-  一个基于 <code>Vite</code> 构建项目的插件库。
+  <code>Fast</code> 平台下基于 <code>Vite</code> 构建项目的插件库。
 </p>
 
 <p align="center">
@@ -42,6 +42,20 @@ export default defineConfig({
 	plugins: [
 		/** 构建本地 SVG 图标，注意需要安装 @fast-china/utils 包 */
 		buildSvgIcon("./src/assets/icons", "./src/icons"),
+		/** 组件自动导入 */
+		componentAutoImport({
+			dir: "src/components",
+			exportPath: "src/components/index.ts",
+			dts: true,
+			dtsPath: "types/component.d.ts",
+		}),
+		/** 路由路径生成 */
+		buildRouterPath({
+			dir: "src/views",
+			exportPath: "src/router/index.json",
+		}),
+		/** 打包版本号更新 */
+		versionUpdatePlugin("1.0.0"),
 		/** CDN 导入 */
 		cdnImport({
 			// 开发环境使用 CDN 路径
@@ -61,23 +75,17 @@ export default defineConfig({
 				},
 			],
 		}),
-		/** TSX 组件自动导入导出 */
-		tsxComponentAutoImport("./src/components"),
-		/** VUE 组件自动导入导出 */
-		vueComponentAutoImport("./src/components"),
-		/** 打包版本号更新 */
-		versionUpdatePlugin("1.0.0"),
 	],
 });
 ```
 
 ## 更新日志
 
-更新日志 [点击查看](https://gitee.com/Fast.Vite.Plugins/commits/master)
+更新日志 [点击查看](https://gitee.com/FastDotnet/Fast.Vite.Plugins/commits/master)
 
 ## 协议
 
-[Fast.Vite.Plugins](https://gitee.com/Fast.Vite.Plugins) 遵循 [Apache-2.0](https://gitee.com/Fast.Vite.Plugins/blob/master/LICENSE) 开源协议，欢迎大家提交 `PR` 或 `Issue`。
+[Fast.Vite.Plugins](https://gitee.com/FastDotnet/Fast.Vite.Plugins) 遵循 [Apache-2.0](https://gitee.com/FastDotnet/Fast.Vite.Plugins/blob/master/LICENSE) 开源协议，欢迎大家提交 `PR` 或 `Issue`。
 
 ```
 Apache开源许可证

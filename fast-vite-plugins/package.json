@@ -1,6 +1,6 @@
 {
 	"name": "fast-vite-plugins",
-	"version": "1.0.17",
+	"version": "1.0.18",
 	"description": "Fast Vite插件库.",
 	"type": "module",
 	"keywords": [
