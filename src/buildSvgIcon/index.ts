@@ -1,6 +1,6 @@
 import fs from "fs";
 import path from "path";
-import type { Plugin, ResolvedConfig } from "vite";
+import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 
 /**
  * 查找 svg 文件
@@ -108,6 +108,44 @@ function buildSvgIcon(dir: string, writeDir: string): Plugin {
 
 	let config: ResolvedConfig;
 
+	const rebuild = (): void => {
+		const svgFiles = findSvgFile(path.resolve(config.root, dir));
+
+		const iconsPath = path.resolve(config.root, writeDir);
+		fs.mkdirSync(iconsPath, { recursive: true });
+
+		let iconImportContent = "";
+		let iconTypeContent = "";
+		let exportContent = "";
+
+		svgFiles.forEach((svg, idx) => {
+			writeTSXIcon(svg.componentName, path.join(iconsPath, svg.iconName), svg.iconContent);
+
+			iconImportContent += `import { ${svg.componentName} } from "./${svg.iconName}";
+`;
+
+			iconTypeContent += `	${svg.componentName},`;
+
+			exportContent += `export * from "./${svg.iconName}";
+`;
+
+			if (idx + 1 < svgFiles.length) {
+				iconTypeContent += "\n";
+			}
+		});
+
+		fs.writeFileSync(
+			path.join(iconsPath, "index.ts"),
+			`import type { DefineComponent } from "vue";
+${iconImportContent}
+${exportContent}
+export default [
+${iconTypeContent}
+] as unknown as DefineComponent[];
+`
+		);
+	};
+
 	return {
 		name: "fast-vite-plugin-build-svg-icon",
 		configResolved: (resolvedConfig: ResolvedConfig): void | Promise<void> => {
@@ -115,41 +153,27 @@ function buildSvgIcon(dir: string, writeDir: string): Plugin {
 			config = resolvedConfig;
 		},
 		buildStart(): void | Promise<void> {
-			const svgFiles = findSvgFile(path.resolve(config.root, dir));
+			rebuild();
+		},
+		// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+		configureServer(server: ViteDevServer) {
+			const fullDir = path.resolve(config.root, dir);
 
-			const iconsPath = path.resolve(config.root, writeDir);
-			fs.mkdirSync(iconsPath, { recursive: true });
+			// 监听文件变化
+			if (fs.existsSync(fullDir)) {
+				server.watcher.add(fullDir);
 
-			let iconImportContent = "";
-			let iconTypeContent = "";
-			let exportContent = "";
+				const handle = (file: string): void => {
+					if (!file) return;
+					if (!file.endsWith(".svg")) return;
 
-			svgFiles.forEach((svg, idx) => {
-				writeTSXIcon(svg.componentName, path.join(iconsPath, svg.iconName), svg.iconContent);
+					rebuild();
+				};
 
-				iconImportContent += `import { ${svg.componentName} } from "./${svg.iconName}";
-`;
-
-				iconTypeContent += `	${svg.componentName},`;
-
-				exportContent += `export * from "./${svg.iconName}";
-`;
-
-				if (idx + 1 < svgFiles.length) {
-					iconTypeContent += "\n";
-				}
-			});
-
-			fs.writeFileSync(
-				path.join(iconsPath, "index.ts"),
-				`import type { DefineComponent } from "vue";
-${iconImportContent}
-${exportContent}
-export default [
-${iconTypeContent}
-] as unknown as DefineComponent[];
-`
-			);
+				server.watcher.on("add", handle);
+				server.watcher.on("change", handle);
+				server.watcher.on("unlink", handle);
+			}
 		},
 	};
 }
