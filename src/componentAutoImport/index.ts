@@ -42,7 +42,6 @@ function componentAutoImport(options: AutoImportOptions = {}): Plugin {
 			from: string;
 		}
 	>();
-	let watcher: fs.FSWatcher | null = null;
 
 	/** 从文件路径获取组件名 */
 	const getNameFromPath = (filePath: string): string => {
@@ -252,29 +251,25 @@ function componentAutoImport(options: AutoImportOptions = {}): Plugin {
 
 			// 监听文件变化
 			if (fs.existsSync(fullDir)) {
-				watcher = fs.watch(fullDir, { recursive: true }, (eventType, filename) => {
-					if (!filename) return;
+				server.watcher.add(fullDir);
+
+				const handle = (file: string): void => {
+					if (!file) return;
 					// 忽略 .d.ts 文件
-					if (filename.endsWith(".d.ts")) return;
+					if (file.endsWith(".d.ts")) return;
 
 					// 检查是否是组件文件
-					const ext = path.extname(filename).slice(1);
+					const ext = path.extname(file).slice(1);
 					if (!extensions.includes(ext)) return;
 
 					scanComponents();
 					generateAutoRegister();
 					generateDts();
+				};
 
-					// 通知客户端刷新
-					server.ws.send({ type: "full-reload", path: "*" });
-				});
-			}
-		},
-		buildEnd(): void | Promise<void> {
-			// 关闭监听器
-			if (watcher) {
-				watcher.close();
-				watcher = null;
+				server.watcher.on("add", handle);
+				server.watcher.on("change", handle);
+				server.watcher.on("unlink", handle);
 			}
 		},
 	};

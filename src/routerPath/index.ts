@@ -28,7 +28,6 @@ function buildRouterPath(options: BuildRouterPathOptions = {}): Plugin {
 	const { dir = "src/views", exportPath = "src/router/index.json", deep = true, extensions = ["vue", "tsx", "jsx"], formatter } = options;
 
 	let config: ResolvedConfig;
-	let watcher: fs.FSWatcher | null = null;
 
 	/** 递归获取目录下所有符合扩展名的文件*/
 	const getAllFiles = (dirPath: string, fileList: string[] = []): string[] => {
@@ -114,27 +113,23 @@ function buildRouterPath(options: BuildRouterPathOptions = {}): Plugin {
 
 			// 监听文件变化
 			if (fs.existsSync(fullDir)) {
-				watcher = fs.watch(fullDir, { recursive: true }, (eventType, filename) => {
-					if (!filename) return;
+				server.watcher.add(fullDir);
+
+				const handle = (file: string): void => {
+					if (!file) return;
 					// 忽略 . d.ts 文件和 JSON 文件
-					if (filename.endsWith(".d.ts") || filename.endsWith(".json")) return;
+					if (file.endsWith(".d.ts") || file.endsWith(".json")) return;
 
 					// 检查是否是组件文件
-					const ext = path.extname(filename).slice(1);
+					const ext = path.extname(file).slice(1);
 					if (!extensions.includes(ext)) return;
 
 					generatePathNameMap();
+				};
 
-					// 通知客户端刷新
-					server.ws.send({ type: "full-reload", path: "*" });
-				});
-			}
-		},
-		buildEnd(): void | Promise<void> {
-			// 关闭监听器
-			if (watcher) {
-				watcher.close();
-				watcher = null;
+				server.watcher.on("add", handle);
+				server.watcher.on("change", handle);
+				server.watcher.on("unlink", handle);
 			}
 		},
 	};
