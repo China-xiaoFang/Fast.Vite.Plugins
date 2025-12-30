@@ -47,7 +47,7 @@ export default defineConfig({
 			dir: "src/components",
 			exportPath: "src/components/index.ts",
 			dts: true,
-			dtsPath: "types/component.d.ts",
+			dtsPath: "types/components.d.ts",
 		}),
 		/** 路由路径生成 */
 		buildRouterPath({
