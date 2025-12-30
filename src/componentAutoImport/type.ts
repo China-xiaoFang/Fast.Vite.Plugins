@@ -16,7 +16,7 @@ export interface AutoImportOptions {
 	dts?: boolean;
 	/**
 	 * 类型声明文件路径
-	 * @default "types/component.d.ts"
+	 * @default "types/components.d.ts"
 	 */
 	dtsPath?: string;
 	/**
