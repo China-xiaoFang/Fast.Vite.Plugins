@@ -202,10 +202,7 @@ function componentAutoImport(options: AutoImportOptions = {}): Plugin {
 
 		components.forEach(({ name, from }) => {
 			// 计算相对路径
-			let relativePath = slash(path.relative(dtsDir, from));
-
-			// 移除文件扩展名
-			relativePath = relativePath.replace(/\.(vue|tsx|jsx)$/, "");
+			const relativePath = slash(path.relative(dtsDir, from));
 
 			// 确保以 ./ 开头
 			const importPath = relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
