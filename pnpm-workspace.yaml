@@ -1,0 +1,10 @@
+packages:
+    - "."
+
+overrides:
+    "@rolldown/binding-wasm32-wasi@1.1.5>@napi-rs/wasm-runtime": 1.1.6
+    "@unrs/resolver-binding-wasm32-wasi@1.12.2>@napi-rs/wasm-runtime": 1.1.6
+
+allowBuilds:
+    esbuild: true
+    unrs-resolver: true

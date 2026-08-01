@@ -1,0 +1,62 @@
+/** 同步值或异步结果。 */
+export type Awaitable<T> = Promise<T> | T;
+/** JSON 支持的原始值。 */
+export type JsonPrimitive = boolean | null | number | string;
+/** 可递归序列化为 JSON 的值。 */
+export type JsonValue = JsonPrimitive | JsonValue[] | { [key: string]: JsonValue };
+
+/** 可调度并取消尚未开始执行任务的防抖函数。 */
+export interface DebouncedTask {
+	/** 重新安排任务；连续调用只保留最后一次等待。 */
+	(): void;
+	/** 取消仍在等待的计时器；已经开始的异步任务不会被中断。 */
+	cancel(): void;
+}
+
+/**
+ * 简单防抖器，用于合并编辑器一次保存触发的多次文件系统事件。
+ *
+ * @param task - 延迟后执行的同步或异步任务。
+ * @param delay - 防抖等待时间，单位毫秒。
+ * @param onError - 异步任务失败时的统一错误处理器。
+ * @returns 可重复调度并取消等待任务的函数。
+ */
+export function createDebouncedTask(task: () => Awaitable<void>, delay: number, onError: (error: unknown) => void): DebouncedTask {
+	let timer: NodeJS.Timeout | undefined;
+	let running: Promise<void> | undefined;
+	let queued = false;
+
+	const execute = (): void => {
+		if (running) {
+			queued = true;
+			return;
+		}
+
+		running = Promise.resolve(task())
+			.catch(onError)
+			.finally(() => {
+				running = undefined;
+				if (queued) {
+					queued = false;
+					schedule();
+				}
+			});
+	};
+
+	const schedule = ((): void => {
+		if (timer) clearTimeout(timer);
+		timer = setTimeout((): void => {
+			timer = undefined;
+			execute();
+		}, delay);
+	}) as DebouncedTask;
+
+	schedule.cancel = (): void => {
+		if (!timer) return;
+		clearTimeout(timer);
+		timer = undefined;
+		queued = false;
+	};
+
+	return schedule;
+}
