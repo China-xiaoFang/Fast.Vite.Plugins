@@ -1,275 +1,231 @@
-import fs from "fs";
-import path from "path";
-import type { AutoImportOptions } from "./type";
+import path from "node:path";
+
+import {
+	errorMessage,
+	hasExtension,
+	isPathInside,
+	normalizeExtensions,
+	normalizePath,
+	relativeImportPath,
+	resolvePathInside,
+	scanFiles,
+	writeFileIfChanged,
+} from "../shared/fileSystem";
+import { compareStrings, isValidIdentifier, toPascalCase } from "../shared/naming";
+import { createDebouncedTask } from "../shared/plugin";
+
+import type { ComponentNameContext, ComponentRegistryPluginOptions, ScannedComponent } from "./type";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 
-/**
- * 将路径转换为 Unix 风格
- */
-function slash(path: string): string {
-	return path.replace(/\\/g, "/");
+const DEFAULT_EXTENSIONS = ["vue", "tsx", "jsx"] as const;
+
+interface ResolvedOptions {
+	conflict: NonNullable<ComponentRegistryPluginOptions["conflict"]>;
+	debounce: number;
+	deep: boolean;
+	dirs: readonly string[];
+	dts: false | string;
+	extensions: ReadonlySet<string>;
+	include: ComponentRegistryPluginOptions["include"];
+	name: ComponentRegistryPluginOptions["name"];
+	output: false | string;
 }
 
 /**
- * Pascal Case 转换
+ * 扫描组件目录并执行名称、扩展名和冲突策略检查。
+ *
+ * @param root - Vite 项目根目录的绝对路径。
+ * @param options - 目录、过滤、命名和冲突策略。
+ * @param onWarning - `conflict: "warn"` 时接收诊断信息的回调。
+ * @returns 按最终组件名称排序的组件描述。
  */
-function pascalCase(str: string): string {
-	return str.replace(/[-_](\w)/g, (_, c) => (c ? c.toUpperCase() : "")).replace(/^\w/, (c) => c.toUpperCase());
+export async function scanComponents(
+	root: string,
+	options: ComponentRegistryPluginOptions = {},
+	onWarning: (message: string) => void = () => undefined
+): Promise<ScannedComponent[]> {
+	const resolved = resolveOptions(options);
+	const components = new Map<string, ScannedComponent>();
+	const visitedFiles = new Set<string>();
+	const generatedFiles = new Set(
+		[resolved.output, resolved.dts]
+			.filter((filePath): filePath is string => Boolean(filePath))
+			.map((filePath) => resolvePathInside(root, filePath, "component-registry"))
+	);
+
+	for (const configuredDirectory of resolved.dirs) {
+		const directory = path.resolve(root, configuredDirectory);
+		const files = await scanFiles(directory, {
+			deep: resolved.deep,
+			filter: (filePath) => hasExtension(filePath, resolved.extensions) && !generatedFiles.has(path.resolve(filePath)),
+		});
+
+		for (const absolutePath of files) {
+			if (visitedFiles.has(absolutePath)) continue;
+			visitedFiles.add(absolutePath);
+			const relativePath = normalizePath(path.relative(directory, absolutePath));
+			const extension = path.extname(relativePath);
+			const pathWithoutExtension = relativePath.slice(0, -extension.length);
+			const basename = path.basename(pathWithoutExtension);
+			const sourceName = basename.toLowerCase() === "index" ? path.basename(path.dirname(pathWithoutExtension)) : basename;
+			const defaultName = toPascalCase(sourceName);
+			const context: ComponentNameContext = { absolutePath, defaultName, relativePath };
+
+			if (resolved.include && !resolved.include(context)) continue;
+
+			const name = resolved.name?.(context) ?? defaultName;
+			if (!isValidIdentifier(name)) {
+				throw new Error(`[fast-vite:component-registry] 组件名称 ${JSON.stringify(name)} 不是合法的 JavaScript 标识符：${relativePath}`);
+			}
+
+			const component: ScannedComponent = { ...context, name };
+			const previous = components.get(name);
+			if (previous && resolved.conflict === "error") {
+				throw new Error(`[fast-vite:component-registry] 组件名称冲突 ${JSON.stringify(name)}：${previous.absolutePath} 与 ${absolutePath}`);
+			}
+			if (previous && resolved.conflict === "warn") {
+				onWarning(`[fast-vite:component-registry] 忽略重名组件 ${JSON.stringify(name)}：${absolutePath}；已使用 ${previous.absolutePath}`);
+			}
+			if (!previous || resolved.conflict === "overwrite") components.set(name, component);
+		}
+	}
+
+	return [...components.values()].sort((left, right) => compareStrings(left.name, right.name));
 }
 
 /**
- * 组件自动导入
- * @param options 选项
+ * 生成组件导出、只读注册表与 `registerComponents` 辅助函数源码。
+ *
+ * @param outputFile - 生成文件的绝对路径，用于计算稳定的相对导入路径。
+ * @param components - 通常由 {@link scanComponents} 返回的组件描述。
+ * @returns 包含命名导出、只读注册表和批量注册函数的 TypeScript 源码。
  */
-function componentAutoImport(options: AutoImportOptions = {}): Plugin {
-	const {
-		dir = "src/components",
-		exportPath = "src/components/index.ts",
-		dts = true,
-		dtsPath = "types/components.d.ts",
-		deep = true,
-		extensions = ["vue", "tsx", "jsx"],
-		formatter,
-	} = options;
+export function renderComponentRegistry(outputFile: string, components: readonly ScannedComponent[]): string {
+	const lines = [
+		"/* eslint-disable */",
+		"/* prettier-ignore */",
+		"// 此文件由 fast-vite-plugins 自动生成，请勿手动编辑。",
+		'import type { App } from "vue";',
+		"",
+	];
 
+	for (const component of components) {
+		lines.push(`import ${component.name} from ${JSON.stringify(relativeImportPath(outputFile, component.absolutePath))};`);
+	}
+
+	if (components.length > 0) lines.push("");
+	for (const component of components) lines.push(`export { ${component.name} };`);
+
+	lines.push("", `export const components = { ${components.map((component) => component.name).join(", ")} } as const;`, "");
+	lines.push("/** 将扫描到的组件注册为 Vue 全局组件。 */", "export function registerComponents(app: App): void {");
+	for (const component of components) lines.push(`\tapp.component(${JSON.stringify(component.name)}, ${component.name});`);
+	lines.push("}", "");
+	return `${lines.join("\n")}\n`;
+}
+
+/**
+ * 生成 Vue 模板类型检查可识别的 `GlobalComponents` 模块增强声明。
+ *
+ * @param dtsFile - 声明文件的绝对路径，用于计算组件类型导入路径。
+ * @param components - 通常由 {@link scanComponents} 返回的组件描述。
+ * @returns 可供 Vue 模板类型检查读取的模块增强声明源码。
+ */
+export function renderComponentDts(dtsFile: string, components: readonly ScannedComponent[]): string {
+	const lines = [
+		"/* eslint-disable */",
+		"// 此文件由 fast-vite-plugins 自动生成，请勿手动编辑。",
+		"export {};",
+		"",
+		'declare module "vue" {',
+		"\texport interface GlobalComponents {",
+	];
+	for (const component of components) {
+		const importPath = relativeImportPath(dtsFile, component.absolutePath);
+		lines.push(`\t\t${component.name}: (typeof import(${JSON.stringify(importPath)}))["default"];`);
+	}
+	lines.push("\t}", "}", "");
+	return `${lines.join("\n")}\n`;
+}
+
+/**
+ * 扫描 Vue/TSX/JSX 组件，并生成可按需导入、批量注册的入口文件和全局组件类型。
+ *
+ * @param options - 扫描目录、输出文件、过滤、命名和冲突策略。
+ * @returns 可直接加入 Vite `plugins` 的组件注册表生成插件。
+ */
+export function createComponentRegistryPlugin(options: ComponentRegistryPluginOptions = {}): Plugin {
+	const resolved = resolveOptions(options);
 	let config: ResolvedConfig;
-	const componentMap = new Map<
-		string,
-		{
-			/** 组件名称 (PascalCase) */
-			name: string;
-			/** 组件文件路径 (绝对路径) */
-			from: string;
+
+	const generate = async (): Promise<void> => {
+		const components = await scanComponents(config.root, options, (message) => config.logger.warn(message));
+		if (resolved.output) {
+			const outputFile = resolvePathInside(config.root, resolved.output, "component-registry");
+			await writeFileIfChanged(outputFile, renderComponentRegistry(outputFile, components));
 		}
-	>();
-
-	/** 从文件路径获取组件名 */
-	const getNameFromPath = (filePath: string): string => {
-		// 移除扩展名
-		let name = filePath;
-		for (const ext of extensions) {
-			if (name.endsWith(`.${ext}`)) {
-				name = name.slice(0, -ext.length - 1);
-				break;
-			}
-		}
-
-		// 如果是 index 文件，使用父目录名
-		if (name.endsWith("/index") || name.endsWith("\\index")) {
-			const parts = name.split(/[\\/]/);
-			name = parts[parts.length - 2] || parts[parts.length - 1];
-		} else {
-			const parts = name.split(/[\\/]/);
-			name = parts[parts.length - 1];
-		}
-
-		if (formatter) {
-			return formatter(name);
-		} else {
-			return pascalCase(name);
-		}
-	};
-
-	/** 递归扫描目录 */
-	const scanDirectory = (dirPath: string, depth = 0): string[] => {
-		const files: string[] = [];
-
-		if (!fs.existsSync(dirPath)) {
-			return files;
-		}
-
-		const entries = fs.readdirSync(dirPath, { withFileTypes: true });
-
-		for (const entry of entries) {
-			const fullPath = path.join(dirPath, entry.name);
-
-			if (entry.isDirectory()) {
-				// 跳过 node_modules 等
-				if (entry.name === "node_modules" || entry.name.startsWith(". ")) {
-					continue;
-				}
-
-				// 深度扫描
-				if (deep || depth === 0) {
-					files.push(...scanDirectory(fullPath, depth + 1));
-				}
-			} else if (entry.isFile()) {
-				// 检查文件扩展名
-				const ext = path.extname(entry.name).slice(1);
-				if (extensions.includes(ext)) {
-					files.push(fullPath);
-				}
-			}
-		}
-
-		return files;
-	};
-
-	/** 扫描组件文件 */
-	const scanComponents = (): void => {
-		componentMap.clear();
-
-		const fullDir = path.resolve(config.root, dir);
-
-		if (!fs.existsSync(fullDir)) {
-			console.warn(`[component-auto-import] Directory not found: ${fullDir}`);
-			return;
-		}
-
-		const files = scanDirectory(fullDir);
-
-		files.forEach((absolutePath) => {
-			const relativePath = path.relative(fullDir, absolutePath);
-			const componentName = getNameFromPath(relativePath);
-
-			componentMap.set(componentName, {
-				name: componentName,
-				from: absolutePath,
-			});
-		});
-	};
-
-	/** 生成自动注册文件 */
-	const generateAutoRegister = (): void => {
-		if (componentMap.size === 0) return;
-
-		const components = Array.from(componentMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-
-		const registerFilePath = path.resolve(config.root, exportPath);
-		const componentDir = path.dirname(registerFilePath);
-
-		const lines: string[] = [];
-		lines.push("/* eslint-disable */");
-		lines.push("/* prettier-ignore */");
-		lines.push("// @ts-nocheck");
-		lines.push("// Auto-generated by fast component-auto-import");
-		lines.push("// Generated by fast-vite-plugins");
-		lines.push("// Do not edit this file manually");
-		lines.push("");
-		lines.push('import type { App } from "vue";');
-		lines.push("");
-
-		// 生成 import 语句
-		components.forEach(({ name, from }) => {
-			const relativePath = slash(path.relative(componentDir, from));
-			const importPath = relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
-			lines.push(`import ${name} from "${importPath}";`);
-			lines.push(`export { ${name} };`);
-			lines.push(`export type ${name}Instance = InstanceType<typeof ${name}>;`);
-		});
-
-		lines.push("");
-		lines.push("/** 自动注册所有组件 */");
-		lines.push("export function registerComponents(app: App): void {");
-
-		components.forEach(({ name }) => {
-			lines.push(`	app.component(${name}.name, ${name});`);
-		});
-
-		lines.push("}");
-		lines.push("");
-
-		const code = `${lines.join("\n")}\n`;
-
-		const existingCode = fs.existsSync(registerFilePath) ? fs.readFileSync(registerFilePath, "utf-8") : "";
-
-		if (code !== existingCode) {
-			fs.writeFileSync(registerFilePath, code, "utf-8");
-		}
-	};
-
-	/** 生成类型声明文件 */
-	const generateDts = (): void => {
-		if (!dts || componentMap.size === 0) return;
-
-		const components = Array.from(componentMap.values()).sort((a, b) => a.name.localeCompare(b.name));
-
-		const dtsFullPath = path.resolve(config.root, dtsPath);
-		const dtsDir = path.dirname(dtsFullPath);
-
-		// 生成类型声明内容
-		const lines: string[] = [];
-		lines.push("// For this project development");
-		lines.push("// Auto-generated by fast component-auto-import");
-		lines.push("// Generated by fast-vite-plugins");
-		lines.push("// Do not edit this file manually");
-		lines.push("");
-		lines.push('import "@vue/runtime-core";');
-		lines.push("");
-		lines.push("// GlobalComponents for Volar");
-		lines.push('declare module "@vue/runtime-core" {');
-		lines.push("	export interface GlobalComponents {");
-
-		components.forEach(({ name, from }) => {
-			// 计算相对路径
-			const relativePath = slash(path.relative(dtsDir, from));
-
-			// 确保以 ./ 开头
-			const importPath = relativePath.startsWith(".") ? relativePath : `./${relativePath}`;
-
-			lines.push(`		${name}: (typeof import("${importPath}"))["default"];`);
-		});
-
-		lines.push("	}");
-		lines.push("}");
-		lines.push("");
-		lines.push("export {};");
-
-		const code = `${lines.join("\n")}\n`;
-
-		// 确保目录存在
-		if (!fs.existsSync(dtsDir)) {
-			fs.mkdirSync(dtsDir, { recursive: true });
-		}
-
-		// 只有内容变化时才写入
-		const existingCode = fs.existsSync(dtsFullPath) ? fs.readFileSync(dtsFullPath, "utf-8") : "";
-
-		if (code !== existingCode) {
-			fs.writeFileSync(dtsFullPath, code, "utf-8");
+		if (resolved.dts) {
+			const dtsFile = resolvePathInside(config.root, resolved.dts, "component-registry");
+			await writeFileIfChanged(dtsFile, renderComponentDts(dtsFile, components));
 		}
 	};
 
 	return {
-		name: "fast-vite-plugin-component-auto-import",
+		name: "fast-vite:component-registry",
 		enforce: "post",
-		configResolved: (resolvedConfig: ResolvedConfig): void | Promise<void> => {
-			// 存储最终解析的配置
+		configResolved(resolvedConfig): void {
 			config = resolvedConfig;
 		},
-		buildStart(): void | Promise<void> {
-			scanComponents();
-			generateAutoRegister();
-			generateDts();
+		async buildStart(): Promise<void> {
+			await generate();
 		},
-		// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-		configureServer(server: ViteDevServer) {
-			const fullDir = path.resolve(config.root, dir);
+		configureServer(server: ViteDevServer): void {
+			const directories = resolved.dirs.map((directory) => path.resolve(config.root, directory));
+			const generatedFiles = [resolved.output, resolved.dts]
+				.filter((filePath): filePath is string => Boolean(filePath))
+				.map((filePath) => resolvePathInside(config.root, filePath, "component-registry"));
+			server.watcher.add(directories);
 
-			// 监听文件变化
-			if (fs.existsSync(fullDir)) {
-				server.watcher.add(fullDir);
+			const schedule = createDebouncedTask(generate, resolved.debounce, (error) => {
+				config.logger.error(`[fast-vite:component-registry] ${errorMessage(error)}`);
+			});
+			const handle = (_event: string, file: string): void => {
+				if (generatedFiles.some((generatedFile) => path.resolve(file) === generatedFile)) return;
+				if (!directories.some((directory) => isPathInside(directory, file))) return;
+				if (hasExtension(file, resolved.extensions)) schedule();
+			};
 
-				const handle = (file: string): void => {
-					if (!file) return;
-					// 忽略 .d.ts 文件
-					if (file.endsWith(".d.ts")) return;
-
-					// 检查是否是组件文件
-					const ext = path.extname(file).slice(1);
-					if (!extensions.includes(ext)) return;
-
-					scanComponents();
-					generateAutoRegister();
-					generateDts();
-				};
-
-				server.watcher.on("add", handle);
-				server.watcher.on("change", handle);
-				server.watcher.on("unlink", handle);
-			}
+			server.watcher.on("all", handle);
+			server.httpServer?.once("close", () => {
+				server.watcher.off("all", handle);
+				schedule.cancel();
+			});
 		},
 	};
 }
 
-export { componentAutoImport };
+function resolveOptions(options: ComponentRegistryPluginOptions): ResolvedOptions {
+	const dirs = options.dirs ?? "src/components";
+	const resolvedDirs = typeof dirs === "string" ? [dirs] : dirs;
+	const extensions = normalizeExtensions(options.extensions ?? DEFAULT_EXTENSIONS);
+	if (resolvedDirs.length === 0) throw new Error("[fast-vite:component-registry] dirs 至少需要一个目录。");
+	if (extensions.size === 0) throw new Error("[fast-vite:component-registry] extensions 至少需要一个扩展名。");
+	if (options.output === false && options.dts === false) {
+		throw new Error("[fast-vite:component-registry] output 与 dts 不能同时关闭。");
+	}
+	if (options.debounce !== undefined && (!Number.isFinite(options.debounce) || options.debounce < 0)) {
+		throw new Error("[fast-vite:component-registry] debounce 必须是大于或等于 0 的有限数值。");
+	}
+	return {
+		conflict: options.conflict ?? "error",
+		debounce: options.debounce ?? 80,
+		deep: options.deep ?? true,
+		dirs: resolvedDirs,
+		dts: options.dts ?? "types/components.generated.d.ts",
+		extensions,
+		include: options.include,
+		name: options.name,
+		output: options.output ?? "src/components/index.generated.ts",
+	};
+}
+
+export type { ComponentNameContext, ComponentRegistryPluginOptions, ScannedComponent } from "./type";

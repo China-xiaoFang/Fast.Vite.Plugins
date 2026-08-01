@@ -32,17 +32,14 @@
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"testing.automaticallyOpenPeekView": "never",
-	"cSpell.words": [],
+	"cSpell.words": ["subresource"],
 	"editor.fontSize": 14,
-	"typescript.tsdk": "node_modules/typescript/lib",
-	"typescript.enablePromptUseWorkspaceTsdk": true,
 	"prettier.endOfLine": "lf",
 
 	// Enable file nesting
 	"explorer.fileNesting.enabled": true,
 	"explorer.fileNesting.patterns": {
-		".prettierrc.cjs": ".prettierignore, .eslintignore, .eslintrc.cjs, eslint.config.mjs",
-		"package.json": ".npmrc, .nvmrc, pnpm-lock.yaml, pnpm-workspace.yaml",
-		"vite.config.*": "vite.*"
+		".prettierrc.cjs": ".prettierignore, eslint.config.mjs",
+		"package.json": ".nvmrc, pnpm-lock.yaml, pnpm-workspace.yaml"
 	}
 }

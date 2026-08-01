@@ -1,38 +1,37 @@
-export interface AutoImportOptions {
-	/**
-	 * 文件夹
-	 * @default "src/components"
-	 */
-	dir?: string;
-	/**
-	 * 导出声明文件路径
-	 * @default "src/components/index.ts"
-	 */
-	exportPath?: string;
-	/**
-	 * 是否生成类型声明文件
-	 * @default true
-	 */
-	dts?: boolean;
-	/**
-	 * 类型声明文件路径
-	 * @default "types/components.d.ts"
-	 */
-	dtsPath?: string;
-	/**
-	 * 是否深度扫描子目录
-	 * @default true
-	 */
+/** 组件名称解析器能够使用的文件上下文。 */
+export interface ComponentNameContext {
+	/** 组件绝对路径。 */
+	absolutePath: string;
+	/** 相对于当前扫描目录的路径，始终使用 `/`。 */
+	relativePath: string;
+	/** 插件根据文件名计算出的默认 PascalCase 名称。 */
+	defaultName: string;
+}
+
+/** 扫描后用于生成注册文件与类型声明的组件信息。 */
+export interface ScannedComponent extends ComponentNameContext {
+	/** 最终使用的 JavaScript 标识符和全局组件名。 */
+	name: string;
+}
+
+/** `createComponentRegistryPlugin` 的配置。 */
+export interface ComponentRegistryPluginOptions {
+	/** 要扫描的组件目录，相对于 Vite `root`；可以配置多个。 @defaultValue `"src/components"` */
+	dirs?: string | readonly string[];
+	/** 生成的组件导出与注册文件；设为 `false` 可关闭。 @defaultValue `"src/components/index.generated.ts"` */
+	output?: false | string;
+	/** 生成的 Vue 全局组件类型声明；设为 `false` 可关闭。 @defaultValue `"types/components.generated.d.ts"` */
+	dts?: false | string;
+	/** 是否递归扫描子目录。 @defaultValue `true` */
 	deep?: boolean;
-	/**
-	 * 文件扩展名
-	 * @default ["vue","tsx","jsx"]
-	 */
-	extensions?: string[];
-	/**
-	 * 自定义组件名称
-	 * @param fName 文件夹名称
-	 * @returns
-	 */
-	formatter?: (fName: string) => string;
+	/** 支持的组件文件扩展名，可带或不带点号。 @defaultValue `["vue", "tsx", "jsx"]` */
+	extensions?: readonly string[];
+	/** 返回 `false` 可排除指定组件。 */
+	include?: (context: ComponentNameContext) => boolean;
+	/** 自定义组件名称。返回值必须是合法的 JavaScript 标识符。 */
+	name?: (context: ComponentNameContext) => string;
+	/** 重名组件的处理方式。 @defaultValue `"error"` */
+	conflict?: "error" | "overwrite" | "warn";
+	/** 开发模式文件变化的防抖时间，单位毫秒。 @defaultValue `80` */
+	debounce?: number;
 }

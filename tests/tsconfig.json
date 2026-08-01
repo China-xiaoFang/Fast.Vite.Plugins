@@ -1,0 +1,4 @@
+{
+	"extends": "../tsconfig.json",
+	"include": ["public-api.test.ts"]
+}
