@@ -1,15 +1,21 @@
 # API 参考
 
-本文档对应 `fast-vite-plugins@2.0.0`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
+本文档对应 `fast-vite-plugins@2.0.1`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
 
-每个插件工厂都应独立导入，并直接写入 Vite 的 `plugins` 数组；库不会隐式启用插件。同时使用 SRI、体积预算和预压缩时，应按该顺序排列，确保压缩后的 HTML 已包含最终 integrity 属性。
+## 入口与异常契约
 
-## `createComponentRegistryPlugin(options?)`
+包只提供一个公共模块入口，每个插件只导出一个函数，并导出配置这些插件所需的选项与回调类型。扫描、渲染、转换、测量等实现辅助函数均保持内部使用。
+
+组合使用时必须保持 `subresourceIntegrity` → `bundleBudget` → `compression`，配置解析阶段会主动诊断逆序。部署与信任边界见[风险指南](./RISKS.zh-CN.md)。
+
+每个插件函数都应独立导入，并直接写入 Vite 的 `plugins` 数组；库不会隐式启用插件。同时使用 SRI、体积预算和预压缩时，应按该顺序排列，确保压缩后的 HTML 已包含最终 integrity 属性。
+
+## `componentRegistry(options?)`
 
 扫描 `.vue`、`.tsx`、`.jsx` 组件，生成命名导出、批量注册模块与 Vue 全局组件声明。
 
 ```ts
-createComponentRegistryPlugin({
+componentRegistry({
 	dirs: ["src/components", "src/features"],
 	output: "src/components/index.generated.ts",
 	dts: "types/components.generated.d.ts",
@@ -31,12 +37,12 @@ createComponentRegistryPlugin({
 
 `index.vue` 默认使用父目录名称。名称必须是唯一且合法的 ECMAScript 标识符。`output` 和 `dts` 不能同时关闭。
 
-## `createRouterMetaPlugin(options?)`
+## `routerMeta(options?)`
 
 生成“页面文件路径 → 稳定组件名”JSON，适合 KeepAlive、权限元数据和路由缓存。
 
 ```ts
-createRouterMetaPlugin({
+routerMeta({
 	dir: "src/views",
 	output: "src/router/routes.generated.json",
 	key: ({ relativePath }) => `@/${relativePath}`,
@@ -57,12 +63,12 @@ createRouterMetaPlugin({
 
 只解析静态字符串形式的 `defineOptions({ name: "..." })`；动态表达式会回退到文件名。
 
-## `createSvgIconsPlugin(options?)`
+## `svgIcons(options?)`
 
 把 SVG 目录编译为单个 Vue 组件模块。组件通过 `h("svg")` 渲染，不要求 JSX 插件。
 
 ```ts
-createSvgIconsPlugin({
+svgIcons({
 	dir: "src/assets/icons",
 	output: "src/icons/index.generated.ts",
 	componentPrefix: "App",
@@ -86,12 +92,12 @@ createSvgIconsPlugin({
 
 SVG 内部标记会通过 `innerHTML` 写入。不要把用户上传或其他不可信 SVG 放入扫描目录。
 
-## `createCdnImportPlugin(options)`
+## `cdnImport(options)`
 
 向 HTML 注入 CDN CSS/JavaScript，并在转换阶段把配置模块的 ESM 引用替换为 `globalThis` 访问。
 
 ```ts
-createCdnImportPlugin({
+cdnImport({
 	urlTemplate: "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}",
 	modules: {
 		name: "react-dom",
@@ -133,10 +139,10 @@ createCdnImportPlugin({
 
 支持默认导入、命名导入、命名重导出、`export * as name` 和静态字符串动态导入。普通 `export * from` 会报错，因为无法安全地把动态全局对象枚举成静态 ESM 导出。
 
-## `createBuildInfoPlugin(options?)`
+## `buildInfo(options?)`
 
 ```ts
-createBuildInfoPlugin({
+buildInfo({
 	fileName: "meta/build-info.json",
 	commit: process.env.GITHUB_SHA,
 	data: ({ mode }) => ({ channel: mode }),
@@ -171,12 +177,12 @@ declare module "virtual:fast-vite/build-info" {
 }
 ```
 
-## `createSubresourceIntegrityPlugin(options?)`
+## `subresourceIntegrity(options?)`
 
 对最终本地 JavaScript/CSS 计算 Subresource Integrity 摘要，并更新 HTML 中的 script、stylesheet、preload 和 modulepreload 标签。
 
 ```ts
-createSubresourceIntegrityPlugin({
+subresourceIntegrity({
 	algorithms: ["sha384", "sha512"],
 	crossorigin: "anonymous",
 	manifest: "meta/integrity.json",
@@ -193,14 +199,14 @@ createSubresourceIntegrityPlugin({
 | `manifest`    | `false`           | `true` 输出 `integrity-manifest.json`，字符串指定安全相对路径 |
 | `strict`      | `false`           | 本地脚本/样式无法对应 bundle 产物时中止构建                   |
 
-完整 URL 只有在与绝对 `base` 同源且位于其路径下时才作为本地产物；其他远程资源不会被下载或计算。publicDir 文件不在 bundle 中，启用 `strict` 前应自行纳入构建图或单独处理。独立使用工厂时必须把本插件放在预压缩插件之前。
+完整 URL 只有在与绝对 `base` 同源且位于其路径下时才作为本地产物；其他远程资源不会被下载或计算。publicDir 文件不在 bundle 中，启用 `strict` 前应自行纳入构建图或单独处理。独立使用时必须把本插件放在预压缩插件之前。
 
-## `createBundleBudgetPlugin(options)`
+## `bundleBudget(options)`
 
 对最终产物执行可让 CI 失败的体积预算，补足 Vite 仅提供 chunk 告警、不能约束 CSS/总量/压缩体积的边界。
 
 ```ts
-createBundleBudgetPlugin({
+bundleBudget({
 	budgets: [
 		{ name: "单个入口 JS", filter: /\.js$/, limit: 250 * 1024, requireMatch: true },
 		{ name: "CSS 总量", filter: /\.css$/, limit: 50 * 1024, mode: "gzip", scope: "total" },
@@ -222,12 +228,12 @@ createBundleBudgetPlugin({
 
 `onExceed` 默认 `error`；`warn` 适合临时观察，不适合作为 CI 质量门禁。gzip/Brotli 模式使用 Node.js 原生编码器实际压缩，不使用估算值。
 
-## `createDevRestartPlugin(options)`
+## `devRestart(options)`
 
 监听 Vite 模块图之外的配置、schema 或生成输入，在变化时防抖重启开发服务器。
 
 ```ts
-createDevRestartPlugin({
+devRestart({
 	paths: ["schema", "config/features.json"],
 	debounce: 100,
 	beforeRestart: async ({ file, event }) => auditChange(file, event),
@@ -244,10 +250,10 @@ createDevRestartPlugin({
 
 启动时存在的目录会匹配其后代；启动时不存在的路径按单个精确文件处理。Vite 已原生监听自己的配置和 `.env`，无需重复加入。
 
-## `createCompressionPlugin(options?)`
+## `compression(options?)`
 
 ```ts
-createCompressionPlugin({
+compression({
 	algorithms: ["gzip", "brotli"],
 	threshold: 10 * 1024,
 	minRatio: 0.95,
@@ -265,10 +271,10 @@ createCompressionPlugin({
 
 生成文件后还需要服务器按 `Accept-Encoding` 提供对应资源。
 
-## `createStaticCopyPlugin(options)`
+## `staticCopy(options)`
 
 ```ts
-createStaticCopyPlugin({
+staticCopy({
 	targets: [
 		{ src: "LICENSE", dest: "meta/LICENSE" },
 		{
@@ -283,10 +289,10 @@ createStaticCopyPlugin({
 
 `dest` 始终相对于 Vite `outDir`，越界路径会被拒绝。`transform` 仅支持普通文件；目录通过 Node.js 原生递归复制处理。
 
-## `createVirtualModulesPlugin(options)`
+## `virtualModules(options)`
 
 ```ts
-createVirtualModulesPlugin({
+virtualModules({
 	modules: {
 		"virtual:feature-flags": "export default { beta: false };",
 		"virtual:build-mode": ({ mode }) => `export default ${JSON.stringify(mode)};`,
@@ -296,10 +302,10 @@ createVirtualModulesPlugin({
 
 模块 ID 必须以 `virtual:` 开头，源码必须是合法 ESM。插件不会猜测导出类型，消费项目需要自行提供 `declare module`。
 
-## `createEnvGuardPlugin(options)`
+## `envGuard(options)`
 
 ```ts
-createEnvGuardPlugin({
+envGuard({
 	schema: {
 		VITE_API_URL: { pattern: /^https:\/\//, description: "HTTPS API base URL" },
 		VITE_STAGE: { values: ["development", "production"] },
@@ -311,14 +317,14 @@ createEnvGuardPlugin({
 
 规则支持 `required`、`allowEmpty`、`pattern`、`values` 和自定义 `validate`。诊断只包含变量名和失败原因，不会输出实际值。
 
-## `createHtmlTemplatePlugin(options)`
+## `htmlTemplate(options)`
 
 ```html
 <title>{{ APP_TITLE }}</title>
 ```
 
 ```ts
-createHtmlTemplatePlugin({
+htmlTemplate({
 	data: ({ mode }) => ({ APP_TITLE: mode === "production" ? "Fast" : "Fast Dev" }),
 	strict: true,
 });
@@ -326,21 +332,6 @@ createHtmlTemplatePlugin({
 
 替换值默认进行 HTML 转义；未知占位符默认保留，`strict: true` 时会报错。只有完全可信且确实需要原始标记时才设置 `escape: false`。
 
-## 高级辅助 API
+## 类型
 
-以下纯函数也从包入口导出，适合测试、自定义工具链或在插件之外复用：
-
-- 组件：`scanComponents`、`renderComponentRegistry`、`renderComponentDts`
-- 路由：`extractComponentName`、`generateRouterMeta`
-- SVG：`parseSvg`、`scanSvgIcons`、`renderSvgIconModule`
-- CDN：`renderCdnUrl`、`globalExpression`、`transformCdnImports`、`resolveCdnModules`
-- 构建信息：`createBuildInformation`
-- 预算：`evaluateBundleBudgets`
-- SRI：`createSubresourceIntegrity`、`injectSubresourceIntegrity`
-- 开发重启：`matchesWatchedPath`
-- 压缩：`compressContent`
-- 复制：`copyStaticTargets`
-- 环境：`validateEnvironment`
-- HTML：`replaceHtmlPlaceholders`
-
-这些辅助函数遵循与插件相同的校验和错误前缀。公共类型均具备 TSDoc，可在编辑器中直接查看字段、默认值和安全约束。
+公开的选项和回调类型均具备 TSDoc，可在编辑器中直接查看默认值、选项交互、错误行为和安全约束。

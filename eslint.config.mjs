@@ -38,7 +38,7 @@ export default defineConfig(
 	// 跨 JavaScript 与 TypeScript 生效的基础规则。
 	{
 		name: "fast-vite-plugins/common",
-		files: ["**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}"],
+		files: ["**/*.{cjs,js,mjs}", "**/*.ts"],
 		linterOptions: {
 			// 无效的 eslint-disable 注释通常表示规则已经变化，应及时清理。
 			reportUnusedDisableDirectives: "error",
@@ -55,22 +55,27 @@ export default defineConfig(
 			// with 会让标识符解析不可预测，并且在严格模式和 ESM 中不可用。
 			"no-with": "error",
 			// 允许用 `void promise` 明确忽略 Promise，但禁止在普通表达式中滥用 void。
-			"no-void": ["error", { allowAsStatement: true }],
+			"no-void": [
+				"error",
+				{
+					allowAsStatement: true,
+				},
+			],
 			// 要求严格相等；保留 `value == null` 同时判断 null/undefined 的常用写法。
 			eqeqeq: ["error", "always", { null: "ignore" }],
 			// 幂运算统一使用 **，减少 Math.pow 嵌套并保持现代语法风格。
 			"prefer-exponentiation-operator": "error",
 			// 使用 Object.hasOwn，避免对象覆盖或缺少 hasOwnProperty 时产生异常。
 			"prefer-object-has-own": "error",
-			// 声明间顺序交给 import-x；这里只排序同一 import 的成员。
+			// [可自动修复] 声明间顺序交给 import-x；这里只排序同一 import 的成员。
 			"sort-imports": [
 				"warn",
 				{
-					allowSeparatedGroups: false,
 					ignoreCase: false,
 					ignoreDeclarationSort: true,
 					ignoreMemberSort: false,
 					memberSyntaxSortOrder: ["none", "all", "multiple", "single"],
+					allowSeparatedGroups: false,
 				},
 			],
 		},
@@ -78,58 +83,103 @@ export default defineConfig(
 	// @eslint/js 提供 JavaScript 基础正确性规则；本段只补充有明确维护理由的规则。
 	{
 		name: "fast-vite-plugins/javascript",
-		files: ["**/*.{cjs,js,jsx,mjs}"],
+		files: ["**/*.{cjs,js,mjs}"],
 		extends: [eslintJs.configs.recommended],
 		languageOptions: {
 			ecmaVersion: "latest",
-			globals: globals.node,
-			parserOptions: { ecmaFeatures: { jsx: true } },
 			sourceType: "module",
 		},
 		rules: {
-			// 控制台调用需要人工确认；warn/error 仍可用于必要的诊断输出。
-			"no-console": ["warn", { allow: ["error", "warn"] }],
+			// 控制台调用在应用源码中需要人工确认；warn/error 仍可用于必要的诊断输出。
+			"no-console": [
+				"warn",
+				{
+					allow: ["warn", "error"],
+				},
+			],
 			// 防止调试断点进入发布代码并中断运行。
 			"no-debugger": "error",
 			// 禁止意外的恒定条件，但允许 while (true) 等有明确退出逻辑的循环。
-			"no-constant-condition": ["error", { checkLoops: false }],
-			// 禁止标签语句；包含多层循环 labeled break/continue 的代码应先重构控制流。
+			"no-constant-condition": [
+				"error",
+				{
+					checkLoops: false,
+				},
+			],
+			// [高影响] 禁止标签语句；包含多层循环 labeled break/continue 的代码需先重构控制流。
 			"no-restricted-syntax": ["error", "LabeledStatement"],
-			// 使用 let/const 替代 var；自动修复后应复核循环闭包和声明提升行为。
+			// [高影响][可自动修复] 使用 let/const 替代 var；首次启用需复核循环闭包和声明提升行为。
 			"no-var": "error",
-			// 禁止无说明的空代码块；允许用于“忽略失败”语义的空 catch。
-			"no-empty": ["error", { allowEmptyCatch: true }],
+			// 禁止无说明的空代码块，空 catch 也必须通过注释或实际处理明确意图。
+			"no-empty": "error",
 			// 拒绝肉眼难以识别、可能导致解析差异的非常规空白字符。
 			"no-irregular-whitespace": "error",
-			// 变量和类先声明后使用；函数声明允许提升。
-			"no-use-before-define": ["warn", { classes: true, functions: false, variables: true }],
-			// 能保持引用不变的变量优先使用 const。
-			"prefer-const": ["warn", { destructuring: "all", ignoreReadBeforeAssign: true }],
-			// 优先箭头回调；自动修复后应复核 this、arguments 与函数名栈信息。
-			"prefer-arrow-callback": ["error", { allowNamedFunctions: false, allowUnboundThis: true }],
-			// 属性和值同名时使用对象简写，带引号键名不强制改写。
-			"object-shorthand": ["error", "always", { avoidQuotes: true, ignoreConstructors: false }],
-			// 使用 ||=、&&=、??=；涉及 getter 或 Proxy 时应复核求值次数。
+			// 变量和类先声明后使用；函数声明允许提升。warn 保留函数式组合和循环依赖重构空间。
+			"no-use-before-define": [
+				"warn",
+				{
+					classes: true,
+					functions: false,
+					variables: true,
+				},
+			],
+			// [可自动修复] 能保持引用不变的变量优先使用 const；读取发生在赋值前时不做不可靠判断。
+			"prefer-const": [
+				"warn",
+				{
+					destructuring: "all",
+					ignoreReadBeforeAssign: true,
+				},
+			],
+			// [高影响][可自动修复] 优先箭头回调；批量修复后应复核 this/arguments 与函数名栈信息。
+			"prefer-arrow-callback": [
+				"error",
+				{
+					allowNamedFunctions: false,
+					allowUnboundThis: true,
+				},
+			],
+			// [可自动修复] 属性和值同名时使用对象简写，带引号键名不强制改写。
+			"object-shorthand": [
+				"error",
+				"always",
+				{
+					ignoreConstructors: false,
+					avoidQuotes: true,
+				},
+			],
+			// [高影响][可自动修复] 使用 ||=、&&=、??=；涉及 getter/Proxy 的代码应复核求值次数。
 			"logical-assignment-operators": ["error", "always", { enforceForIfStatements: true }],
-			// 合并对象时优先展开语法，避免 Object.assign 的额外目标对象样板。
+			// [可自动修复] 合并对象时优先展开语法，避免 Object.assign 的额外目标对象样板。
 			"prefer-object-spread": "error",
-			// 可变参数函数优先 rest 参数，避免依赖类数组 arguments。
+			// 可变参数函数优先 rest 参数，避免依赖类数组 arguments；该规则只报告，不自动改写签名。
 			"prefer-rest-params": "error",
-			// 调用可迭代对象时优先 spread，避免滥用 apply。
+			// 调用可迭代对象时优先 spread；该规则只报告，避免自动改变 apply 的 this 语义。
 			"prefer-spread": "error",
-			// 字符串拼接优先模板字符串，便于阅读和多段插值。
+			// [可自动修复] 字符串拼接优先模板字符串，便于阅读和多段插值。
 			"prefer-template": "error",
 			// 同一作用域禁止重复声明，避免后声明遮盖前声明。
 			"no-redeclare": "error",
 		},
 	},
+	{
+		name: "fast-vite-plugins/commonjs",
+		files: ["**/*.cjs"],
+		languageOptions: { sourceType: "commonjs" },
+	},
+	{
+		name: "fast-vite-plugins/node-javascript",
+		files: ["*.{js,mjs}", "scripts/**/*.{js,mjs}", "tests/**/*.{cjs,mjs}"],
+		languageOptions: { globals: globals.node },
+	},
 	// TypeScript 使用类型感知的 recommended 与 stylistic 预置。
 	{
 		name: "fast-vite-plugins/typescript",
-		files: ["**/*.{cts,mts,ts,tsx}"],
+		files: ["**/*.ts"],
 		extends: [...tseslint.configs.recommendedTypeChecked, ...tseslint.configs.stylisticTypeChecked],
 		languageOptions: {
 			ecmaVersion: "latest",
+			globals: globals.node,
 			parserOptions: {
 				// Project Service 读取 tsconfig，为需要完整类型信息的规则提供语义数据。
 				projectService: true,
@@ -179,7 +229,7 @@ export default defineConfig(
 	// import-x 负责模块导入正确性、分组和排序，不猜测项目别名解析器。
 	{
 		name: "fast-vite-plugins/imports",
-		files: ["**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}"],
+		files: ["**/*.{cjs,js,mjs}", "**/*.ts"],
 		extends: [eslintPluginImportX.flatConfigs.recommended],
 		rules: {
 			// import 必须位于其他语句之前，避免模块依赖散落在执行逻辑中。
@@ -220,7 +270,7 @@ export default defineConfig(
 	// 检查无效、冗余或容易产生回溯问题的正则表达式。
 	{
 		name: "fast-vite-plugins/regexp",
-		files: ["**/*.{cjs,cts,js,jsx,mjs,mts,ts,tsx}"],
+		files: ["**/*.{cjs,js,mjs}", "**/*.ts"],
 		extends: [eslintPluginRegexp.configs["flat/recommended"]],
 	},
 	// 严格 JSON 使用官方推荐规则。
@@ -229,10 +279,10 @@ export default defineConfig(
 		files: ["**/*.json"],
 		extends: [eslintPluginJsonc.configs["flat/recommended-with-json"]],
 	},
-	// JSONC 允许注释和尾随逗号，不能复用严格 JSON 解析规则。
+	// tsconfig 与 VS Code 设置实际使用 JSONC，应用完整推荐预置，避免严格 JSON 规则错误覆盖。
 	{
 		name: "fast-vite-plugins/jsonc",
-		files: ["**/*.jsonc"],
+		files: ["**/tsconfig.json", "**/tsconfig.*.json", "**/.vscode/settings.json"],
 		extends: [eslintPluginJsonc.configs["flat/recommended-with-jsonc"]],
 	},
 	{
@@ -243,11 +293,201 @@ export default defineConfig(
 			"jsonc/no-comments": "off",
 		},
 	},
-	// JSON5 使用自己的官方推荐预置。
 	{
-		name: "fast-vite-plugins/json5",
-		files: ["**/*.json5"],
-		extends: [eslintPluginJsonc.configs["flat/recommended-with-json5"]],
+		name: "fast-vite-plugins/package-json",
+		files: ["**/package.json"],
+		rules: {
+			// [高影响][可自动修复] npm 的 files 清单按字母排序；数组顺序不改打包集合，但首次 diff 较大。
+			"jsonc/sort-array-values": [
+				"error",
+				{
+					order: { type: "asc" },
+					pathPattern: "^files$",
+				},
+			],
+			// [高影响][可自动修复] 仅排序明确安全的 package.json 区域，不进入 exports 条件对象。
+			"jsonc/sort-keys": [
+				"error",
+				// 根字段按常见阅读顺序组织，减少不同项目之间的清单噪声。
+				{
+					order: [
+						"name",
+						"version",
+						"private",
+						"packageManager",
+						"description",
+						"type",
+						"keywords",
+						"license",
+						"homepage",
+						"bugs",
+						"repository",
+						"author",
+						"contributors",
+						"funding",
+						"files",
+						"main",
+						"module",
+						"types",
+						"exports",
+						"typesVersions",
+						"sideEffects",
+						"unpkg",
+						"jsdelivr",
+						"browser",
+						"bin",
+						"man",
+						"directories",
+						"publishConfig",
+						"scripts",
+						"peerDependencies",
+						"peerDependenciesMeta",
+						"optionalDependencies",
+						"dependencies",
+						"devDependencies",
+						"engines",
+						"config",
+						"overrides",
+						"pnpm",
+						"husky",
+						"lint-staged",
+						"eslintConfig",
+						"prettier",
+					],
+					pathPattern: "^$",
+				},
+				// 各类依赖映射按包名排序，方便发现重复或异常依赖。
+				{
+					order: { type: "asc" },
+					pathPattern: "^(?:dev|peer|optional|bundled)?[Dd]ependencies(Meta)?$",
+				},
+				// overrides/resolutions 只排序直接键；修改前仍应关注包管理器的模式匹配语义。
+				{
+					order: { type: "asc" },
+					pathPattern: "^(?:resolutions|overrides|pnpm.overrides)$",
+				},
+			],
+		},
+	},
+	{
+		name: "fast-vite-plugins/tsconfig",
+		files: ["**/tsconfig.json", "**/tsconfig.*.json"],
+		rules: {
+			// tsconfig 是 JSONC，注释用于解释不直观的编译器取舍，必须保留。
+			"jsonc/no-comments": "off",
+			// [高影响][可自动修复] 只调整顶层和 compilerOptions 的键顺序，不改写任何选项值或数组。
+			"jsonc/sort-keys": [
+				"error",
+				// 顶层按继承、选项、项目引用和文件范围的阅读顺序排列。
+				{
+					order: ["extends", "compilerOptions", "references", "files", "include", "exclude"],
+					pathPattern: "^$",
+				},
+				// compilerOptions 的顺序跟随 TypeScript 文档主题，便于检索和代码审查。
+				{
+					order: [
+						/* Projects */
+						"incremental",
+						"composite",
+						"tsBuildInfoFile",
+						"disableSourceOfProjectReferenceRedirect",
+						"disableSolutionSearching",
+						"disableReferencedProjectLoad",
+						/* Language and Environment */
+						"target",
+						"jsx",
+						"jsxFactory",
+						"jsxFragmentFactory",
+						"jsxImportSource",
+						"lib",
+						"moduleDetection",
+						"noLib",
+						"reactNamespace",
+						"useDefineForClassFields",
+						"emitDecoratorMetadata",
+						"experimentalDecorators",
+						/* Modules */
+						"baseUrl",
+						"rootDir",
+						"rootDirs",
+						"customConditions",
+						"module",
+						"moduleResolution",
+						"moduleSuffixes",
+						"noResolve",
+						"paths",
+						"resolveJsonModule",
+						"resolvePackageJsonExports",
+						"resolvePackageJsonImports",
+						"typeRoots",
+						"types",
+						"allowArbitraryExtensions",
+						"allowImportingTsExtensions",
+						"allowUmdGlobalAccess",
+						/* JavaScript Support */
+						"allowJs",
+						"checkJs",
+						"maxNodeModuleJsDepth",
+						/* Type Checking */
+						"strict",
+						"strictBindCallApply",
+						"strictFunctionTypes",
+						"strictNullChecks",
+						"strictPropertyInitialization",
+						"allowUnreachableCode",
+						"allowUnusedLabels",
+						"alwaysStrict",
+						"exactOptionalPropertyTypes",
+						"noFallthroughCasesInSwitch",
+						"noImplicitAny",
+						"noImplicitOverride",
+						"noImplicitReturns",
+						"noImplicitThis",
+						"noPropertyAccessFromIndexSignature",
+						"noUncheckedIndexedAccess",
+						"noUnusedLocals",
+						"noUnusedParameters",
+						"useUnknownInCatchVariables",
+						/* Emit */
+						"declaration",
+						"declarationDir",
+						"declarationMap",
+						"downlevelIteration",
+						"emitBOM",
+						"emitDeclarationOnly",
+						"importHelpers",
+						"importsNotUsedAsValues",
+						"inlineSourceMap",
+						"inlineSources",
+						"isolatedDeclarations",
+						"mapRoot",
+						"newLine",
+						"noEmit",
+						"noEmitHelpers",
+						"noEmitOnError",
+						"outDir",
+						"outFile",
+						"preserveConstEnums",
+						"preserveValueImports",
+						"removeComments",
+						"sourceMap",
+						"sourceRoot",
+						"stripInternal",
+						/* Interop Constraints */
+						"allowSyntheticDefaultImports",
+						"esModuleInterop",
+						"forceConsistentCasingInFileNames",
+						"isolatedModules",
+						"preserveSymlinks",
+						"verbatimModuleSyntax",
+						/* Completeness */
+						"skipDefaultLibCheck",
+						"skipLibCheck",
+					],
+					pathPattern: "^compilerOptions$",
+				},
+			],
+		},
 	},
 	// 检查 Markdown 文档结构；代码块由各语言配置单独负责。
 	{

@@ -11,11 +11,13 @@ import {
 	scanFiles,
 	writeFileIfChanged,
 } from "../shared/fileSystem";
-import { compareStrings, isValidIdentifier, toPascalCase } from "../shared/naming";
-import { createDebouncedTask } from "../shared/plugin";
+import { compareStrings, isValidBindingIdentifier, toPascalCase } from "../shared/naming";
+import { createDebouncedTask, onServerClose } from "../shared/plugin";
 
 import type { ComponentNameContext, ComponentRegistryPluginOptions, ScannedComponent } from "./type";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
+
+export type { ComponentNameContext, ComponentRegistryPluginOptions } from "./type";
 
 const DEFAULT_EXTENSIONS = ["vue", "tsx", "jsx"] as const;
 
@@ -39,7 +41,7 @@ interface ResolvedOptions {
  * @param onWarning - `conflict: "warn"` 时接收诊断信息的回调。
  * @returns 按最终组件名称排序的组件描述。
  */
-export async function scanComponents(
+async function scanComponents(
 	root: string,
 	options: ComponentRegistryPluginOptions = {},
 	onWarning: (message: string) => void = () => undefined
@@ -74,8 +76,8 @@ export async function scanComponents(
 			if (resolved.include && !resolved.include(context)) continue;
 
 			const name = resolved.name?.(context) ?? defaultName;
-			if (!isValidIdentifier(name)) {
-				throw new Error(`[fast-vite:component-registry] 组件名称 ${JSON.stringify(name)} 不是合法的 JavaScript 标识符：${relativePath}`);
+			if (!isValidBindingIdentifier(name)) {
+				throw new Error(`[fast-vite:component-registry] 组件名称 ${JSON.stringify(name)} 不能作为生成代码绑定名：${relativePath}`);
 			}
 
 			const component: ScannedComponent = { ...context, name };
@@ -97,10 +99,10 @@ export async function scanComponents(
  * 生成组件导出、只读注册表与 `registerComponents` 辅助函数源码。
  *
  * @param outputFile - 生成文件的绝对路径，用于计算稳定的相对导入路径。
- * @param components - 通常由 {@link scanComponents} 返回的组件描述。
+ * @param components - 已扫描并完成名称校验的组件描述。
  * @returns 包含命名导出、只读注册表和批量注册函数的 TypeScript 源码。
  */
-export function renderComponentRegistry(outputFile: string, components: readonly ScannedComponent[]): string {
+function renderComponentRegistry(outputFile: string, components: readonly ScannedComponent[]): string {
 	const lines = [
 		"/* eslint-disable */",
 		"/* prettier-ignore */",
@@ -127,10 +129,10 @@ export function renderComponentRegistry(outputFile: string, components: readonly
  * 生成 Vue 模板类型检查可识别的 `GlobalComponents` 模块增强声明。
  *
  * @param dtsFile - 声明文件的绝对路径，用于计算组件类型导入路径。
- * @param components - 通常由 {@link scanComponents} 返回的组件描述。
+ * @param components - 已扫描并完成名称校验的组件描述。
  * @returns 可供 Vue 模板类型检查读取的模块增强声明源码。
  */
-export function renderComponentDts(dtsFile: string, components: readonly ScannedComponent[]): string {
+function renderComponentDeclarations(dtsFile: string, components: readonly ScannedComponent[]): string {
 	const lines = [
 		"/* eslint-disable */",
 		"// 此文件由 fast-vite-plugins 自动生成，请勿手动编辑。",
@@ -152,8 +154,9 @@ export function renderComponentDts(dtsFile: string, components: readonly Scanned
  *
  * @param options - 扫描目录、输出文件、过滤、命名和冲突策略。
  * @returns 可直接加入 Vite `plugins` 的组件注册表生成插件。
+ * @throws 目录、扩展名、输出路径、绑定名或冲突策略无效时抛出异常。
  */
-export function createComponentRegistryPlugin(options: ComponentRegistryPluginOptions = {}): Plugin {
+export function componentRegistry(options: ComponentRegistryPluginOptions = {}): Plugin {
 	const resolved = resolveOptions(options);
 	let config: ResolvedConfig;
 
@@ -165,7 +168,7 @@ export function createComponentRegistryPlugin(options: ComponentRegistryPluginOp
 		}
 		if (resolved.dts) {
 			const dtsFile = resolvePathInside(config.root, resolved.dts, "component-registry");
-			await writeFileIfChanged(dtsFile, renderComponentDts(dtsFile, components));
+			await writeFileIfChanged(dtsFile, renderComponentDeclarations(dtsFile, components));
 		}
 	};
 
@@ -195,7 +198,7 @@ export function createComponentRegistryPlugin(options: ComponentRegistryPluginOp
 			};
 
 			server.watcher.on("all", handle);
-			server.httpServer?.once("close", () => {
+			onServerClose(server, () => {
 				server.watcher.off("all", handle);
 				schedule.cancel();
 			});
@@ -208,24 +211,37 @@ function resolveOptions(options: ComponentRegistryPluginOptions): ResolvedOption
 	const resolvedDirs = typeof dirs === "string" ? [dirs] : dirs;
 	const extensions = normalizeExtensions(options.extensions ?? DEFAULT_EXTENSIONS);
 	if (resolvedDirs.length === 0) throw new Error("[fast-vite:component-registry] dirs 至少需要一个目录。");
+	if (resolvedDirs.some((directory) => typeof directory !== "string" || !directory.trim())) {
+		throw new Error("[fast-vite:component-registry] dirs 不能包含空路径。");
+	}
 	if (extensions.size === 0) throw new Error("[fast-vite:component-registry] extensions 至少需要一个扩展名。");
+	if (options.conflict && !["error", "warn", "overwrite"].includes(options.conflict)) {
+		throw new Error("[fast-vite:component-registry] conflict 只能是 error、warn 或 overwrite。");
+	}
 	if (options.output === false && options.dts === false) {
 		throw new Error("[fast-vite:component-registry] output 与 dts 不能同时关闭。");
 	}
 	if (options.debounce !== undefined && (!Number.isFinite(options.debounce) || options.debounce < 0)) {
 		throw new Error("[fast-vite:component-registry] debounce 必须是大于或等于 0 的有限数值。");
 	}
+	const output = options.output ?? "src/components/index.generated.ts";
+	const dts = options.dts ?? "types/components.generated.d.ts";
+	if (output && !/\.[cm]?ts$/i.test(output)) {
+		throw new Error("[fast-vite:component-registry] output 必须使用 TypeScript 输出扩展名 .ts、.mts 或 .cts。");
+	}
+	if (dts && !/\.d\.ts$/i.test(dts)) throw new Error("[fast-vite:component-registry] dts 必须以 .d.ts 结尾。");
+	if (output && dts && path.resolve(output) === path.resolve(dts)) {
+		throw new Error("[fast-vite:component-registry] output 与 dts 不能指向同一文件。");
+	}
 	return {
 		conflict: options.conflict ?? "error",
 		debounce: options.debounce ?? 80,
 		deep: options.deep ?? true,
 		dirs: resolvedDirs,
-		dts: options.dts ?? "types/components.generated.d.ts",
+		dts,
 		extensions,
 		include: options.include,
 		name: options.name,
-		output: options.output ?? "src/components/index.generated.ts",
+		output,
 	};
 }
-
-export type { ComponentNameContext, ComponentRegistryPluginOptions, ScannedComponent } from "./type";

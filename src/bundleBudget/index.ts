@@ -1,5 +1,6 @@
-import { compressContent } from "../compression";
+import { compressBytes } from "../shared/compression";
 import { compareStrings } from "../shared/naming";
+import { assertPostBuildPluginOrder } from "../shared/order";
 
 import type {
 	BundleBudgetEvaluation,
@@ -12,19 +13,21 @@ import type {
 } from "./type";
 import type { Plugin } from "vite";
 
+export type { BundleBudgetFilter, BundleBudgetPluginOptions, BundleBudgetRule, BundleOutputType, BundleSizeMode } from "./type";
+
 const DEFAULT_FILTER = /^(?!.*(?:\.br|\.gz|\.map)$).+/i;
 
 /**
  * 评估一组构建产物是否满足声明的体积预算。
  *
- * gzip/Brotli 大小使用 Node.js 原生 zlib 实际压缩后计算，不以估算值替代。返回结果与
- * 输入顺序无关：预算保持声明顺序，文件始终按文件名稳定排序。
+ * gzip/Brotli 大小使用 Node.js 原生 zlib 实际压缩后计算，不以估算值替代。预算保持声明顺序，
+ * 匹配的文件始终按文件名稳定排序。
  *
  * @param outputs - 已生成的 chunk 与 asset 内容。
  * @param budgets - 要执行的预算规则。
  * @returns 每条规则的测量值、匹配文件和超限状态。
  */
-export async function evaluateBundleBudgets(
+async function evaluateBundleBudgets(
 	outputs: readonly MeasurableBundleOutput[],
 	budgets: readonly BundleBudgetRule[]
 ): Promise<BundleBudgetEvaluation[]> {
@@ -72,8 +75,9 @@ export async function evaluateBundleBudgets(
  *
  * @param options - 预算规则及超限处理方式。
  * @returns 可直接加入 Vite `plugins` 的构建体积预算插件。
+ * @throws 预算为空、名称冲突、枚举或数值无效，以及构建超限时抛出异常。
  */
-export function createBundleBudgetPlugin(options: BundleBudgetPluginOptions): Plugin {
+export function bundleBudget(options: BundleBudgetPluginOptions): Plugin {
 	validateBudgets(options.budgets);
 	if (options.onExceed && options.onExceed !== "error" && options.onExceed !== "warn") {
 		throw new Error("[fast-vite:bundle-budget] onExceed 只能是 error 或 warn。");
@@ -83,6 +87,7 @@ export function createBundleBudgetPlugin(options: BundleBudgetPluginOptions): Pl
 		name: "fast-vite:bundle-budget",
 		apply: "build",
 		enforce: "post",
+		configResolved: assertPostBuildPluginOrder,
 		generateBundle: {
 			order: "post",
 			async handler(_outputOptions, bundle): Promise<void> {
@@ -104,15 +109,16 @@ export function createBundleBudgetPlugin(options: BundleBudgetPluginOptions): Pl
 }
 
 function validateBudgets(budgets: readonly BundleBudgetRule[]): void {
+	const configuredBudgets: unknown = budgets;
+	if (!Array.isArray(configuredBudgets)) throw new Error("[fast-vite:bundle-budget] budgets 必须是数组。");
 	if (budgets.length === 0) throw new Error("[fast-vite:bundle-budget] budgets 至少需要一条预算规则。");
 	const configuredNames = new Set<string>();
 
 	for (const [index, budget] of budgets.entries()) {
-		if (budget.name !== undefined) {
-			if (!budget.name.trim()) throw new Error(`[fast-vite:bundle-budget] 第 ${index + 1} 条预算的 name 不能为空。`);
-			if (configuredNames.has(budget.name)) throw new Error(`[fast-vite:bundle-budget] 预算名称不能重复：${budget.name}`);
-			configuredNames.add(budget.name);
-		}
+		const name = budget.name ?? `budget-${index + 1}`;
+		if (!name.trim()) throw new Error(`[fast-vite:bundle-budget] 第 ${index + 1} 条预算的 name 不能为空。`);
+		if (configuredNames.has(name)) throw new Error(`[fast-vite:bundle-budget] 预算名称不能重复：${name}`);
+		configuredNames.add(name);
 		if (!Number.isSafeInteger(budget.limit) || budget.limit < 0) {
 			throw new Error(`[fast-vite:bundle-budget] 第 ${index + 1} 条预算的 limit 必须是大于或等于 0 的安全整数。`);
 		}
@@ -137,7 +143,7 @@ async function measureOutput(output: MeasurableBundleOutput, mode: BundleSizeMod
 	if (cached) return cached;
 
 	const content = typeof output.source === "string" ? Buffer.from(output.source) : Buffer.from(output.source);
-	const measurement = mode === "raw" ? Promise.resolve(content.byteLength) : compressContent(content, mode).then((value) => value.byteLength);
+	const measurement = mode === "raw" ? Promise.resolve(content.byteLength) : compressBytes(content, mode).then((value) => value.byteLength);
 	cache.set(key, measurement);
 	return measurement;
 }
@@ -168,14 +174,3 @@ function formatBytes(bytes: number): string {
 	if (kibibytes < 1024) return `${kibibytes.toFixed(2)} KiB`;
 	return `${(kibibytes / 1024).toFixed(2)} MiB`;
 }
-
-export type {
-	BundleBudgetEvaluation,
-	BundleBudgetFileMeasurement,
-	BundleBudgetFilter,
-	BundleBudgetPluginOptions,
-	BundleBudgetRule,
-	BundleOutputType,
-	BundleSizeMode,
-	MeasurableBundleOutput,
-} from "./type";

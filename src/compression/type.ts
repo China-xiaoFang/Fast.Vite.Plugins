@@ -3,7 +3,7 @@ import type { BrotliOptions, ZlibOptions } from "node:zlib";
 /** 插件支持的预压缩算法。 */
 export type CompressionAlgorithm = "brotli" | "gzip";
 
-/** `createCompressionPlugin` 的配置。 */
+/** `compression` 的配置。 */
 export interface CompressionPluginOptions {
 	/** 要生成的压缩格式；重复项会被忽略。 @defaultValue `["gzip", "brotli"]` */
 	algorithms?: CompressionAlgorithm | readonly CompressionAlgorithm[];

@@ -1,7 +1,7 @@
 /** SVG 根元素支持的静态属性值。 */
 export type SvgAttributeValue = boolean | number | string;
 
-/** `parseSvg` 返回的根元素属性与内部标记。 */
+/** 解析后的 SVG 根元素属性与内部标记。 */
 export interface ParsedSvg {
 	/** 标准化后的 `<svg>` 根元素属性。 */
 	attributes: Record<string, SvgAttributeValue>;
@@ -29,7 +29,7 @@ export interface ScannedSvgIcon extends SvgIconNameContext {
 	content: string;
 }
 
-/** `createSvgIconsPlugin` 的配置。 */
+/** `svgIcons` 的配置。 */
 export interface SvgIconsPluginOptions {
 	/** SVG 源目录，相对于 Vite `root`。 @defaultValue `"src/assets/icons"` */
 	dir?: string;

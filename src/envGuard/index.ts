@@ -5,6 +5,8 @@ import { loadEnv } from "vite";
 import type { EnvGuardPluginOptions, EnvRule, EnvSchema, EnvValidationIssue } from "./type";
 import type { Plugin } from "vite";
 
+export type { EnvGuardPluginOptions, EnvRule, EnvSchema } from "./type";
+
 /**
  * 校验环境变量并返回不包含实际值的问题列表。
  *
@@ -12,18 +14,21 @@ import type { Plugin } from "vite";
  * @param environment - 待校验的只读键值映射。
  * @returns 按 schema 声明顺序排列的问题。
  */
-export function validateEnvironment(schema: EnvSchema, environment: Readonly<Record<string, string | undefined>>): EnvValidationIssue[] {
+function validateEnvironment(schema: EnvSchema, environment: Readonly<Record<string, string | undefined>>): EnvValidationIssue[] {
 	const issues: EnvValidationIssue[] = [];
 
 	for (const [key, configuredRule] of Object.entries(schema)) {
 		const rule: EnvRule = configuredRule === true ? {} : configuredRule;
 		const value = environment[key];
-		const missing = value === undefined || (value.length === 0 && rule.allowEmpty !== true);
-		if (missing && rule.required !== false) {
-			issues.push({ key, message: "缺少必需变量或变量为空" });
+		if (value === undefined && rule.required !== false) {
+			issues.push({ key, message: "缺少必需变量" });
 			continue;
 		}
 		if (value === undefined) continue;
+		if (value.length === 0 && rule.allowEmpty !== true) {
+			issues.push({ key, message: "变量为空；如需允许空字符串，请设置 allowEmpty: true" });
+			continue;
+		}
 
 		if (rule.pattern) {
 			rule.pattern.lastIndex = 0;
@@ -44,8 +49,25 @@ export function validateEnvironment(schema: EnvSchema, environment: Readonly<Rec
  *
  * @param options - 环境变量 schema、跳过模式和失败处理方式。
  * @returns 可直接加入 Vite `plugins` 的环境变量校验插件。
+ * @throws schema、空值规则或失败枚举无效时抛出异常。
  */
-export function createEnvGuardPlugin(options: EnvGuardPluginOptions): Plugin {
+export function envGuard(options: EnvGuardPluginOptions): Plugin {
+	if (!options.schema || typeof options.schema !== "object" || Array.isArray(options.schema) || Object.keys(options.schema).length === 0) {
+		throw new Error("[fast-vite:env-guard] schema 至少需要一条环境变量规则。");
+	}
+	if (options.onInvalid && options.onInvalid !== "error" && options.onInvalid !== "warn") {
+		throw new Error("[fast-vite:env-guard] onInvalid 只能是 error 或 warn。");
+	}
+	if (options.skipModes?.some((mode) => !mode.trim())) throw new Error("[fast-vite:env-guard] skipModes 不能包含空模式。");
+	for (const [key, rule] of Object.entries(options.schema)) {
+		if (!key.trim()) throw new Error("[fast-vite:env-guard] 环境变量名称不能为空。");
+		if (rule !== true && (!rule || typeof rule !== "object" || Array.isArray(rule))) {
+			throw new Error(`[fast-vite:env-guard] ${key} 的规则必须是 true 或对象。`);
+		}
+		if (rule !== true && rule.values?.length === 0) {
+			throw new Error(`[fast-vite:env-guard] ${key} 的 values 不能为空数组。`);
+		}
+	}
 	return {
 		name: "fast-vite:env-guard",
 		config(config, env): void {
@@ -62,5 +84,3 @@ export function createEnvGuardPlugin(options: EnvGuardPluginOptions): Plugin {
 		},
 	};
 }
-
-export type { EnvGuardPluginOptions, EnvRule, EnvSchema, EnvValidationIssue } from "./type";

@@ -12,7 +12,7 @@ export type VirtualModuleSource = string | ((context: VirtualModuleContext) => A
 /** 以 `virtual:` 开头的公开模块 ID 到源码提供者的映射。 */
 export type VirtualModuleMap = Readonly<Record<string, VirtualModuleSource>>;
 
-/** `createVirtualModulesPlugin` 的配置。 */
+/** `virtualModules` 的配置。 */
 export interface VirtualModulesPluginOptions {
 	/** 要注册的虚拟模块。所有键都必须以 `virtual:` 开头。 */
 	modules: VirtualModuleMap;
@@ -26,8 +26,12 @@ export interface VirtualModulesPluginOptions {
  *
  * @param options - 公开虚拟模块 ID 与静态或动态源码的映射。
  * @returns 可直接加入 Vite `plugins` 的虚拟模块插件。
+ * @throws 模块映射为空、不是对象或包含非 `virtual:` ID 时抛出异常。
  */
-export function createVirtualModulesPlugin(options: VirtualModulesPluginOptions): Plugin {
+export function virtualModules(options: VirtualModulesPluginOptions): Plugin {
+	if (!options.modules || typeof options.modules !== "object" || Array.isArray(options.modules)) {
+		throw new Error("[fast-vite:virtual-modules] modules 必须是对象。");
+	}
 	const { modules } = options;
 	const ids = Object.keys(modules);
 	const prefix = "\0fast-vite:virtual:";
@@ -48,7 +52,7 @@ export function createVirtualModulesPlugin(options: VirtualModulesPluginOptions)
 			config = resolvedConfig;
 		},
 		resolveId(id): string | undefined {
-			return id in modules ? `${prefix}${id}` : undefined;
+			return Object.hasOwn(modules, id) ? `${prefix}${id}` : undefined;
 		},
 		async load(id): Promise<string | undefined> {
 			if (!id.startsWith(prefix)) return undefined;

@@ -26,7 +26,7 @@ export interface BuildInfoContext extends ConfigEnv {
 	root: string;
 }
 
-/** `createBuildInfoPlugin` 的配置。 */
+/** `buildInfo` 的配置。 */
 export interface BuildInfoPluginOptions {
 	/** 固定版本号；省略时读取 {@link packageJson} 指向的文件。 */
 	version?: string;

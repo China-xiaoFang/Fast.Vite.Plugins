@@ -2,10 +2,12 @@ import { stat } from "node:fs/promises";
 import path from "node:path";
 
 import { errorMessage } from "../shared/fileSystem";
-import { createDebouncedTask } from "../shared/plugin";
+import { createDebouncedTask, onServerClose } from "../shared/plugin";
 
 import type { DevRestartContext, DevRestartEvent, DevRestartPluginOptions, ResolvedRestartPath } from "./type";
 import type { Plugin } from "vite";
+
+export type { DevRestartContext, DevRestartEvent, DevRestartPluginOptions } from "./type";
 
 const SUPPORTED_EVENTS = new Set<DevRestartEvent>(["add", "addDir", "change", "unlink", "unlinkDir"]);
 const GLOB_PATTERN = /[*?[\]{}!]/;
@@ -19,7 +21,7 @@ const GLOB_PATTERN = /[*?[\]{}!]/;
  * @param targets - 已解析的精确文件和目录目标。
  * @returns 命中任一精确目标或目录后代时返回 `true`。
  */
-export function matchesWatchedPath(filePath: string, targets: readonly ResolvedRestartPath[]): boolean {
+function matchesWatchedPath(filePath: string, targets: readonly ResolvedRestartPath[]): boolean {
 	const candidate = comparablePath(filePath);
 	return targets.some((target) => {
 		const watched = comparablePath(target.path);
@@ -36,8 +38,13 @@ export function matchesWatchedPath(filePath: string, targets: readonly ResolvedR
  *
  * @param options - 监听路径、防抖、依赖预构建和重启前钩子配置。
  * @returns 仅在开发服务器中生效的 Vite 重启插件。
+ * @throws 路径集合、glob 或防抖数值无效时抛出异常。
  */
-export function createDevRestartPlugin(options: DevRestartPluginOptions): Plugin {
+export function devRestart(options: DevRestartPluginOptions): Plugin {
+	const configuredPathsValue: unknown = options.paths;
+	if (typeof configuredPathsValue !== "string" && !Array.isArray(configuredPathsValue)) {
+		throw new Error("[fast-vite:dev-restart] paths 必须是字符串或字符串数组。");
+	}
 	const configuredPaths = typeof options.paths === "string" ? [options.paths] : [...options.paths];
 	const debounce = options.debounce ?? 100;
 	validateOptions(configuredPaths, debounce);
@@ -87,6 +94,10 @@ export function createDevRestartPlugin(options: DevRestartPluginOptions): Plugin
 				restart.cancel();
 				server.watcher.off("all", handleEvent);
 			};
+			onServerClose(server, () => {
+				dispose?.();
+				dispose = undefined;
+			});
 		},
 		buildEnd(): void {
 			dispose?.();
@@ -111,5 +122,3 @@ function comparablePath(filePath: string): string {
 	const normalized = path.resolve(filePath);
 	return process.platform === "win32" ? normalized.toLowerCase() : normalized;
 }
-
-export type { DevRestartContext, DevRestartEvent, DevRestartPluginOptions, ResolvedRestartPath } from "./type";

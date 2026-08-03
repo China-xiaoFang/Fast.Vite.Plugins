@@ -1,12 +1,23 @@
 # Changelog
 
+## Unreleased
+
+## 2.0.1 - 2026-08-03
+
+- Align Node.js, pnpm, CI, and Node type contracts with the 22.18/24.18 validation lines.
+- Add a single explicit ESM entry, declaration maps, and exact package-content governance tests.
+- Add regression coverage for CDN transforms and source maps, SRI HTML/path handling, lifecycle disposal, route-name scanning, runtime validation, multi-output static copy, and SRI → budget → compression ordering.
+- Add public jsDelivr and unpkg URL templates, with jsDelivr remaining the default CDN provider.
+- Support Vite 7 and 8 through the public peer dependency contract.
+- Add English and Chinese risk guidance and clarify the release process.
+
 All notable changes to this project are documented in this file.
 
 ## 2.0.0 - 2026-08-01
 
 ### Core
 
-- Independent `create...Plugin` factories with `...PluginOptions` public types.
+- One feature-named function per plugin with `...PluginOptions` public types.
 - ESM-only `.mjs` output and `.d.mts` declarations with source maps.
 - TypeScript 6, tsdown, ESLint 10, pnpm 11, and Node.js `^22.18.0 || >=24.11.0`.
 - Vite 8 development and peer support.

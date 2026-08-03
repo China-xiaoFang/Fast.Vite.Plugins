@@ -2,40 +2,40 @@
 
 [English](./README.md) | 简体中文
 
-一个采用 Apache-2.0 许可证、面向现代 Web 应用的公开开源 Vite 插件库。`2.0.0` 提供完整类型、独立插件工厂、TypeScript 6、tsdown、安全边界、测试、CI、发布校验和框架级文档。
+一个采用 Apache-2.0 许可证、面向现代 Web 应用的公开开源 Vite 插件库。`2.0.1` 提供完整类型、独立插件函数、TypeScript 6、tsdown、安全边界、测试、CI、发布校验和框架级文档。
 
 [![npm](https://img.shields.io/npm/v/fast-vite-plugins)](https://www.npmjs.com/package/fast-vite-plugins)
 [![license](https://img.shields.io/npm/l/fast-vite-plugins)](./LICENSE)
-[![node](https://img.shields.io/badge/node-%5E22.18%20%7C%7C%20%3E%3D24.11-brightgreen)](https://nodejs.org/)
-[![vite](https://img.shields.io/badge/vite-8-646cff)](https://vite.dev/)
+[![node](https://img.shields.io/badge/node-%5E22.18%20%7C%7C%20%5E24.18-brightgreen)](https://nodejs.org/)
+[![vite](https://img.shields.io/badge/vite-7%20%7C%208-646cff)](https://vite.dev/)
 
 ## 特性
 
 - ESM-only 发布，Vite 是唯一 peer dependency，插件库本身没有运行时依赖。
 - 以 Web 应用为核心，覆盖开发体验、HTML、资源、安全、可观测性和生产质量门禁。
-- 所有插件使用独立的 `create...Plugin` 工厂，项目只需导入实际使用的插件。
+- 每个插件只提供一个功能名函数，项目只需导入实际使用的插件。
 - 生成结果稳定排序且仅在内容变化时写入，减少无意义 HMR 和缓存失效。
 - 输出路径具备目录边界检查；文件监听具备防抖、关闭清理和名称冲突诊断。
 - TypeScript 6 严格模式、类型感知 ESLint 10、真实 Vite 构建和公开 API 类型测试共同组成质量门禁。
-- 支持 Vite 8；运行环境要求 Node.js `^22.18.0 || >=24.11.0`。
+- 支持 Vite 7 和 8；运行环境要求 Node.js `^22.18.0 || ^24.18.0`。
 
 ## 插件一览
 
-| API                                | 用途                                               |
-| ---------------------------------- | -------------------------------------------------- |
-| `createComponentRegistryPlugin`    | 扫描 Vue/TSX/JSX 组件，生成注册入口和 Vue 全局类型 |
-| `createRouterMetaPlugin`           | 生成页面路径与稳定组件名 JSON 映射                 |
-| `createSvgIconsPlugin`             | 将 SVG 目录生成单文件 Vue 图标组件模块             |
-| `createCdnImportPlugin`            | 注入 CDN 标签，并将 ESM 导入映射为浏览器全局变量   |
-| `createBuildInfoPlugin`            | 输出构建信息 JSON、开发端点和虚拟模块              |
-| `createBundleBudgetPlugin`         | 对单文件或产物总和执行原始/压缩体积预算            |
-| `createCompressionPlugin`          | 生成 gzip、Brotli 预压缩资源                       |
-| `createSubresourceIntegrityPlugin` | 为本地 JavaScript/CSS 注入 SRI 完整性摘要          |
-| `createDevRestartPlugin`           | 外部配置文件变化时防抖重启开发服务器               |
-| `createStaticCopyPlugin`           | 构建后安全复制或转换静态文件与目录                 |
-| `createVirtualModulesPlugin`       | 声明静态或动态虚拟 ESM 模块                        |
-| `createEnvGuardPlugin`             | 在启动/构建前校验环境变量且不泄露变量值            |
-| `createHtmlTemplatePlugin`         | 安全替换 HTML 占位符并注入 Vite HTML 标签描述符    |
+| API                    | 用途                                               |
+| ---------------------- | -------------------------------------------------- |
+| `componentRegistry`    | 扫描 Vue/TSX/JSX 组件，生成注册入口和 Vue 全局类型 |
+| `routerMeta`           | 生成页面路径与稳定组件名 JSON 映射                 |
+| `svgIcons`             | 将 SVG 目录生成单文件 Vue 图标组件模块             |
+| `cdnImport`            | 注入 CDN 标签，并将 ESM 导入映射为浏览器全局变量   |
+| `buildInfo`            | 输出构建信息 JSON、开发端点和虚拟模块              |
+| `bundleBudget`         | 对单文件或产物总和执行原始/压缩体积预算            |
+| `compression`          | 生成 gzip、Brotli 预压缩资源                       |
+| `subresourceIntegrity` | 为本地 JavaScript/CSS 注入 SRI 完整性摘要          |
+| `devRestart`           | 外部配置文件变化时防抖重启开发服务器               |
+| `staticCopy`           | 构建后安全复制或转换静态文件与目录                 |
+| `virtualModules`       | 声明静态或动态虚拟 ESM 模块                        |
+| `envGuard`             | 在启动/构建前校验环境变量且不泄露变量值            |
+| `htmlTemplate`         | 安全替换 HTML 占位符并注入 Vite HTML 标签描述符    |
 
 ## 安装
 
@@ -43,37 +43,31 @@
 pnpm add -D fast-vite-plugins
 ```
 
-消费项目必须使用 ESM Vite 配置，并安装 Vite 8。
+消费项目必须使用 ESM Vite 配置，并安装 Vite 7 或 8。
 
 ## 快速开始
 
 ```ts
 import { defineConfig } from "vite";
 
-import {
-	createBuildInfoPlugin,
-	createBundleBudgetPlugin,
-	createCompressionPlugin,
-	createEnvGuardPlugin,
-	createSubresourceIntegrityPlugin,
-} from "fast-vite-plugins";
+import { buildInfo, bundleBudget, compression, envGuard, subresourceIntegrity } from "fast-vite-plugins";
 
 export default defineConfig({
 	plugins: [
-		createEnvGuardPlugin({
+		envGuard({
 			schema: {
 				VITE_API_URL: { pattern: /^https:\/\// },
 			},
 		}),
-		createBuildInfoPlugin(),
-		createSubresourceIntegrityPlugin({ manifest: true }),
-		createBundleBudgetPlugin({
+		buildInfo(),
+		subresourceIntegrity({ manifest: true }),
+		bundleBudget({
 			budgets: [
 				{ name: "入口 JS", filter: /\.js$/, limit: 250 * 1024 },
 				{ name: "全部 CSS（gzip）", filter: /\.css$/, limit: 50 * 1024, mode: "gzip", scope: "total" },
 			],
 		}),
-		createCompressionPlugin({
+		compression({
 			algorithms: ["gzip", "brotli"],
 			threshold: 10 * 1024,
 		}),
@@ -84,13 +78,10 @@ export default defineConfig({
 每个插件都需要独立导入和配置，库不会隐式启用任何能力：
 
 ```ts
-import { createBuildInfoPlugin, createHtmlTemplatePlugin } from "fast-vite-plugins";
+import { buildInfo, htmlTemplate } from "fast-vite-plugins";
 
 export default defineConfig({
-	plugins: [
-		createHtmlTemplatePlugin({ data: { APP_TITLE: "Fast Admin" }, strict: true }),
-		createBuildInfoPlugin({ fileName: "meta/build-info.json" }),
-	],
+	plugins: [htmlTemplate({ data: { APP_TITLE: "Fast Admin" }, strict: true }), buildInfo({ fileName: "meta/build-info.json" })],
 });
 ```
 
@@ -99,7 +90,7 @@ export default defineConfig({
 ### 组件注册与类型
 
 ```ts
-createComponentRegistryPlugin({
+componentRegistry({
 	dirs: ["src/components", "src/features"],
 	output: "src/components/index.generated.ts",
 	dts: "types/components.generated.d.ts",
@@ -112,7 +103,7 @@ createComponentRegistryPlugin({
 ### CDN 外部化
 
 ```ts
-createCdnImportPlugin({
+cdnImport({
 	modules: [
 		{
 			name: "vue",
@@ -130,7 +121,7 @@ createCdnImportPlugin({
 ### 构建信息
 
 ```ts
-createBuildInfoPlugin({
+buildInfo({
 	fileName: "meta/build-info.json",
 	data: ({ mode }) => ({ channel: mode === "production" ? "stable" : "preview" }),
 });
@@ -143,24 +134,24 @@ createBuildInfoPlugin({
 ```ts
 export default defineConfig({
 	plugins: [
-		createSubresourceIntegrityPlugin({ algorithms: "sha384", manifest: true }),
-		createBundleBudgetPlugin({
+		subresourceIntegrity({ algorithms: "sha384", manifest: true }),
+		bundleBudget({
 			budgets: [
 				{ name: "单个 JS", filter: /\.js$/, limit: 250 * 1024, requireMatch: true },
 				{ name: "CSS 总量", filter: /\.css$/, limit: 50 * 1024, mode: "gzip", scope: "total" },
 			],
 		}),
-		createCompressionPlugin({ algorithms: ["gzip", "brotli"] }),
+		compression({ algorithms: ["gzip", "brotli"] }),
 	],
 });
 ```
 
-同时使用这些插件时，应保持 `createSubresourceIntegrityPlugin` → `createBundleBudgetPlugin` → `createCompressionPlugin` 的顺序。
+同时使用这些插件时，应保持 `subresourceIntegrity` → `bundleBudget` → `compression` 的顺序。
 
 ### 外部配置变更重启
 
 ```ts
-createDevRestartPlugin({
+devRestart({
 	paths: ["schema", "config/features.json"],
 	debounce: 100,
 });
@@ -170,7 +161,7 @@ createDevRestartPlugin({
 
 ## 安全与部署提示
 
-- `createSvgIconsPlugin` 会通过 `innerHTML` 渲染 SVG 内部标记，扫描目录只能包含受信任的仓库资源。
+- `svgIcons` 会通过 `innerHTML` 渲染 SVG 内部标记，扫描目录只能包含受信任的仓库资源。
 - SRI 插件只计算本次构建的本地资源；远程 CDN 仍需固定版本，并单独配置 CSP 与 integrity 元数据。
 - 预压缩插件只生成 `.gz` / `.br` 文件，Web 服务器或对象存储仍需按 `Accept-Encoding` 正确返回资源。
 - 本仓库发布的是 npm 库，不是可直接部署的网站；应用部署的是消费项目构建得到的 `dist/`。
@@ -178,9 +169,9 @@ createDevRestartPlugin({
 ## 文档
 
 - [完整 API 参考](./docs/API.zh-CN.md)
+- [风险指南](./docs/RISKS.zh-CN.md)
 - [拉取、开发、发布与部署](./docs/DEVELOPMENT_RELEASE_DEPLOY.zh-CN.md)
 - [工程质量审查](./docs/ENGINEERING_REVIEW.zh-CN.md)
-- [贡献指南](./CONTRIBUTING.md)
 - [更新日志](./CHANGELOG.md)
 - [安全策略](./SECURITY.md)
 
@@ -191,7 +182,7 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-`check` 会按照与 `Fast.ESLint.Config` 一致的顺序执行 tsdown 构建、TypeScript 6、ESLint、Prettier、公共 API 类型、Node 测试和真实 Vite 集成测试。仓库根目录就是公开 npm 包；`pnpm build` 只写入根目录下被忽略的 `dist/`，打包和发布也从仓库根目录执行。
+`check` 会固定执行 tsdown 构建、源码类型检查、发布声明消费者测试、ESLint、Prettier、运行时与真实 Vite 集成测试，以及公共 API、文档、ESM-only 和归档契约测试。仓库根目录就是公开 npm 包；`pnpm build` 只写入根目录下被忽略的 `dist/`，打包和发布也从仓库根目录执行。
 
 ## 许可证
 

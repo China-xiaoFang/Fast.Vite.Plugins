@@ -12,10 +12,12 @@ import {
 	writeFileIfChanged,
 } from "../shared/fileSystem";
 import { compareStrings, toPascalCase } from "../shared/naming";
-import { createDebouncedTask } from "../shared/plugin";
+import { createDebouncedTask, onServerClose } from "../shared/plugin";
 
 import type { RouterMetaContext, RouterMetaMap, RouterMetaPluginOptions } from "./type";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
+
+export type { RouterMetaContext, RouterMetaPluginOptions } from "./type";
 
 const DEFAULT_EXTENSIONS = ["vue", "tsx", "jsx"] as const;
 
@@ -32,15 +34,182 @@ interface ResolvedOptions {
 }
 
 /**
- * 从 Vue `<script setup>` 的 `defineOptions({ name: "..." })` 中提取组件名。
- * 这里只处理静态字符串；动态表达式会回退到文件名，保证结果可预测。
+ * 从 `defineOptions()` 的顶层对象中读取静态组件名。
+ *
+ * 扫描会跳过注释、字符串、模板字符串和嵌套对象；动态表达式返回 `undefined`。
  *
  * @param source - Vue 或 TypeScript 页面源码。
- * @returns 静态名称；未找到可确定名称时返回 `undefined`。
+ * @returns 可静态确定的组件名；未找到时返回 `undefined`。
  */
-export function extractComponentName(source: string): string | undefined {
-	const match = /defineOptions(?:\s*<[^>]*>)?\s*\(\s*\{[\s\S]*?\bname\s*:\s*(["'`])([^"'`]+)\1/.exec(source);
-	return match?.[2];
+function extractComponentName(source: string): string | undefined {
+	let index = 0;
+	while (index < source.length) {
+		index = skipTrivia(source, index);
+		const skipped = skipQuoted(source, index);
+		if (skipped !== index) {
+			index = skipped;
+			continue;
+		}
+		if (!source.startsWith("defineOptions", index) || isIdentifierCharacter(source[index - 1]) || isIdentifierCharacter(source[index + 13])) {
+			index += 1;
+			continue;
+		}
+
+		let cursor = skipTrivia(source, index + 13);
+		if (source[cursor] === "<") {
+			cursor = skipBalanced(source, cursor, "<", ">");
+			cursor = skipTrivia(source, cursor);
+		}
+		if (source[cursor] !== "(") {
+			index += 13;
+			continue;
+		}
+		cursor = skipTrivia(source, cursor + 1);
+		if (source[cursor] !== "{") {
+			index += 13;
+			continue;
+		}
+		const name = readTopLevelName(source, cursor);
+		if (name !== undefined) return name;
+		index = cursor + 1;
+	}
+	return undefined;
+}
+
+function readTopLevelName(source: string, objectStart: number): string | undefined {
+	let braceDepth = 1;
+	let bracketDepth = 0;
+	let parenthesisDepth = 0;
+	let index = objectStart + 1;
+	while (index < source.length && braceDepth > 0) {
+		index = skipTrivia(source, index);
+		if (braceDepth === 1 && bracketDepth === 0 && parenthesisDepth === 0) {
+			const property = readPropertyName(source, index);
+			if (property) {
+				let cursor = skipTrivia(source, property.end);
+				if (source[cursor] === "?" && source[cursor + 1] !== "?") cursor = skipTrivia(source, cursor + 1);
+				if (source[cursor] === ":" && property.name === "name") {
+					cursor = skipTrivia(source, cursor + 1);
+					const value = readStaticString(source, cursor);
+					if (value) return value.value;
+				}
+			}
+		}
+
+		const quotedEnd = skipQuoted(source, index);
+		if (quotedEnd !== index) {
+			index = quotedEnd;
+			continue;
+		}
+		switch (source[index]) {
+			case "{":
+				braceDepth += 1;
+				break;
+			case "}":
+				braceDepth -= 1;
+				break;
+			case "[":
+				bracketDepth += 1;
+				break;
+			case "]":
+				bracketDepth = Math.max(0, bracketDepth - 1);
+				break;
+			case "(":
+				parenthesisDepth += 1;
+				break;
+			case ")":
+				parenthesisDepth = Math.max(0, parenthesisDepth - 1);
+				break;
+		}
+		index += 1;
+	}
+	return undefined;
+}
+
+function readPropertyName(source: string, index: number): { end: number; name: string } | undefined {
+	const string = readStaticString(source, index);
+	if (string) return { end: string.end, name: string.value };
+	if (!isIdentifierStart(source[index])) return undefined;
+	let end = index + 1;
+	while (isIdentifierCharacter(source[end])) end += 1;
+	return { end, name: source.slice(index, end) };
+}
+
+function readStaticString(source: string, index: number): { end: number; value: string } | undefined {
+	const quote = source[index];
+	if (quote !== '"' && quote !== "'" && quote !== "`") return undefined;
+	let value = "";
+	for (let cursor = index + 1; cursor < source.length; cursor += 1) {
+		const character = source[cursor];
+		if (character === "\\") {
+			const escaped = source[cursor + 1];
+			if (escaped === undefined) return undefined;
+			value += escaped;
+			cursor += 1;
+			continue;
+		}
+		if (quote === "`" && character === "$" && source[cursor + 1] === "{") return undefined;
+		if (character === quote) return { end: cursor + 1, value };
+		value += character;
+	}
+	return undefined;
+}
+
+function skipTrivia(source: string, start: number): number {
+	let index = start;
+	while (index < source.length) {
+		if (/\s/u.test(source[index] ?? "")) {
+			index += 1;
+			continue;
+		}
+		if (source.startsWith("//", index)) {
+			const end = source.indexOf("\n", index + 2);
+			index = end < 0 ? source.length : end + 1;
+			continue;
+		}
+		if (source.startsWith("/*", index)) {
+			const end = source.indexOf("*/", index + 2);
+			index = end < 0 ? source.length : end + 2;
+			continue;
+		}
+		break;
+	}
+	return index;
+}
+
+function skipQuoted(source: string, index: number): number {
+	const quote = source[index];
+	if (quote !== '"' && quote !== "'" && quote !== "`") return index;
+	for (let cursor = index + 1; cursor < source.length; cursor += 1) {
+		if (source[cursor] === "\\") cursor += 1;
+		else if (source[cursor] === quote) return cursor + 1;
+	}
+	return source.length;
+}
+
+function skipBalanced(source: string, start: number, open: string, close: string): number {
+	let depth = 0;
+	let index = start;
+	while (index < source.length) {
+		index = skipTrivia(source, index);
+		const quotedEnd = skipQuoted(source, index);
+		if (quotedEnd !== index) {
+			index = quotedEnd;
+			continue;
+		}
+		if (source[index] === open) depth += 1;
+		else if (source[index] === close && --depth === 0) return index + 1;
+		index += 1;
+	}
+	return source.length;
+}
+
+function isIdentifierStart(value: string | undefined): boolean {
+	return value !== undefined && /^[$_\p{ID_Start}]$/u.test(value);
+}
+
+function isIdentifierCharacter(value: string | undefined): boolean {
+	return value !== undefined && /^[$\u200C\u200D\p{ID_Continue}]$/u.test(value);
 }
 
 /**
@@ -50,7 +219,7 @@ export function extractComponentName(source: string): string | undefined {
  * @param options - 页面目录、过滤、命名和输出键规则。
  * @returns 按路径键稳定排序的页面名称映射。
  */
-export async function generateRouterMeta(root: string, options: RouterMetaPluginOptions = {}): Promise<RouterMetaMap> {
+async function generateRouterMeta(root: string, options: RouterMetaPluginOptions = {}): Promise<RouterMetaMap> {
 	const resolved = resolveOptions(options);
 	const directory = path.resolve(root, resolved.dir);
 	const outputFile = resolvePathInside(root, resolved.output, "router-meta");
@@ -87,8 +256,9 @@ export async function generateRouterMeta(root: string, options: RouterMetaPlugin
  *
  * @param options - 页面扫描、命名、路径键、JSON 输出和监听配置。
  * @returns 可直接加入 Vite `plugins` 的路由元数据生成插件。
+ * @throws 目录、扩展名、输出、数值或生成键冲突时抛出异常。
  */
-export function createRouterMetaPlugin(options: RouterMetaPluginOptions = {}): Plugin {
+export function routerMeta(options: RouterMetaPluginOptions = {}): Plugin {
 	const resolved = resolveOptions(options);
 	let config: ResolvedConfig;
 
@@ -121,7 +291,7 @@ export function createRouterMetaPlugin(options: RouterMetaPluginOptions = {}): P
 			};
 
 			server.watcher.on("all", handle);
-			server.httpServer?.once("close", () => {
+			onServerClose(server, () => {
 				server.watcher.off("all", handle);
 				schedule.cancel();
 			});
@@ -131,6 +301,8 @@ export function createRouterMetaPlugin(options: RouterMetaPluginOptions = {}): P
 
 function resolveOptions(options: RouterMetaPluginOptions): ResolvedOptions {
 	const extensions = normalizeExtensions(options.extensions ?? DEFAULT_EXTENSIONS);
+	if (options.dir !== undefined && !options.dir.trim()) throw new Error("[fast-vite:router-meta] dir 不能为空路径。");
+	if (options.output !== undefined && !/\.json$/i.test(options.output)) throw new Error("[fast-vite:router-meta] output 必须是 .json 文件。");
 	if (extensions.size === 0) throw new Error("[fast-vite:router-meta] extensions 至少需要一个扩展名。");
 	if (options.indent !== undefined && (!Number.isInteger(options.indent) || options.indent < 0 || options.indent > 10)) {
 		throw new Error("[fast-vite:router-meta] indent 必须是 0 到 10 之间的整数。");
@@ -150,5 +322,3 @@ function resolveOptions(options: RouterMetaPluginOptions): ResolvedOptions {
 		output: options.output ?? "src/router/routes.generated.json",
 	};
 }
-
-export type { RouterMetaContext, RouterMetaMap, RouterMetaPluginOptions } from "./type";

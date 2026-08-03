@@ -45,7 +45,7 @@ export interface BundleBudgetRule {
 	requireMatch?: boolean;
 }
 
-/** `createBundleBudgetPlugin` 的配置。 */
+/** `bundleBudget` 的配置。 */
 export interface BundleBudgetPluginOptions {
 	/** 至少一条预算规则；规则按声明顺序执行和报告。 */
 	budgets: readonly BundleBudgetRule[];
@@ -57,7 +57,7 @@ export interface BundleBudgetPluginOptions {
 	onExceed?: "error" | "warn";
 }
 
-/** 可交给 `evaluateBundleBudgets` 的最小构建产物结构。 */
+/** 插件内部用于预算测量的最小构建产物结构。 */
 export interface MeasurableBundleOutput {
 	/** `outDir` 内的相对文件名。 */
 	fileName: string;

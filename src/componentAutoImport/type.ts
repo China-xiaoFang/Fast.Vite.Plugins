@@ -14,7 +14,7 @@ export interface ScannedComponent extends ComponentNameContext {
 	name: string;
 }
 
-/** `createComponentRegistryPlugin` 的配置。 */
+/** `componentRegistry` 的配置。 */
 export interface ComponentRegistryPluginOptions {
 	/** 要扫描的组件目录，相对于 Vite `root`；可以配置多个。 @defaultValue `"src/components"` */
 	dirs?: string | readonly string[];

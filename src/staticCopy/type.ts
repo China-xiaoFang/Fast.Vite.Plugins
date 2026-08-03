@@ -12,7 +12,7 @@ export interface StaticCopyTarget {
 	transform?: (content: Buffer, sourcePath: string) => Awaitable<Buffer | string | Uint8Array>;
 }
 
-/** `createStaticCopyPlugin` 的配置。 */
+/** `staticCopy` 的配置。 */
 export interface StaticCopyPluginOptions {
 	/** 按声明顺序执行的复制目标。 */
 	targets: readonly StaticCopyTarget[];

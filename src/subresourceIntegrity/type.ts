@@ -7,7 +7,7 @@ export type SubresourceIntegrityFilter = RegExp | ((fileName: string, type: "ass
 /** HTML 标签使用的 CORS 凭据模式。 */
 export type IntegrityCrossorigin = "anonymous" | "use-credentials" | false;
 
-/** `createSubresourceIntegrityPlugin` 的配置。 */
+/** `subresourceIntegrity` 的配置。 */
 export interface SubresourceIntegrityPluginOptions {
 	/**
 	 * 一个或多个摘要算法；多个结果会按声明顺序写入同一个 `integrity` 属性。
@@ -47,8 +47,8 @@ export interface SubresourceIntegrityPluginOptions {
 	strict?: boolean;
 }
 
-/** `injectSubresourceIntegrity` 的输入。 */
-export interface InjectSubresourceIntegrityOptions {
+/** 内部 HTML 完整性注入参数。 */
+export interface IntegrityInjectionOptions {
 	/** 当前 HTML 在 `outDir` 内的相对文件名。 @defaultValue `"index.html"` */
 	htmlFileName?: string;
 	/** Vite 已解析的 `base`，支持根路径、相对路径和完整 URL。 @defaultValue `"/"` */
@@ -62,7 +62,7 @@ export interface InjectSubresourceIntegrityOptions {
 }
 
 /** HTML 完整性注入的确定性结果。 */
-export interface SubresourceIntegrityInjectionResult {
+export interface IntegrityInjectionResult {
 	/** 转换后的 HTML。 */
 	html: string;
 	/** 成功注入或更新的构建产物文件名，已去重并稳定排序。 */

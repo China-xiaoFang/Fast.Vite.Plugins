@@ -2,11 +2,13 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { errorMessage, isPathInside, normalizePath, resolvePathInside, scanFiles, writeFileIfChanged } from "../shared/fileSystem";
-import { compareStrings, isValidIdentifier, toPascalCase } from "../shared/naming";
-import { createDebouncedTask } from "../shared/plugin";
+import { compareStrings, isValidBindingIdentifier, toPascalCase } from "../shared/naming";
+import { createDebouncedTask, onServerClose } from "../shared/plugin";
 
 import type { ParsedSvg, ScannedSvgIcon, SvgAttributeValue, SvgIconNameContext, SvgIconsPluginOptions } from "./type";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
+
+export type { SvgAttributeValue, SvgIconNameContext, SvgIconsPluginOptions } from "./type";
 
 interface ResolvedOptions {
 	componentPrefix: string;
@@ -28,7 +30,7 @@ interface ResolvedOptions {
  * @returns 可用于生成 Vue 渲染函数的结构化结果。
  * @throws 输入缺少完整 SVG 根元素时抛出异常。
  */
-export function parseSvg(source: string): ParsedSvg {
+function parseSvg(source: string): ParsedSvg {
 	const normalized = source
 		.replace(/<\?xml[\s\S]*?\?>/gi, "")
 		.replace(/<!doctype[\s\S]*?>/gi, "")
@@ -62,7 +64,7 @@ export function parseSvg(source: string): ParsedSvg {
  * @param options - 扫描目录、命名和根属性选项。
  * @returns 按最终组件名称排序的图标描述。
  */
-export async function scanSvgIcons(root: string, options: SvgIconsPluginOptions = {}): Promise<ScannedSvgIcon[]> {
+async function scanSvgIcons(root: string, options: SvgIconsPluginOptions = {}): Promise<ScannedSvgIcon[]> {
 	const resolved = resolveOptions(options);
 	const directory = path.resolve(root, resolved.dir);
 	const files = await scanFiles(directory, {
@@ -79,7 +81,8 @@ export async function scanSvgIcons(root: string, options: SvgIconsPluginOptions 
 		if (resolved.include && !resolved.include(context)) continue;
 
 		const name = resolved.name?.(context) ?? defaultName;
-		if (!isValidIdentifier(name)) throw new Error(`[fast-vite:svg-icons] 非法组件名 ${JSON.stringify(name)}：${relativePath}`);
+		if (!isValidBindingIdentifier(name))
+			throw new Error(`[fast-vite:svg-icons] 组件名不能作为生成代码绑定名 ${JSON.stringify(name)}：${relativePath}`);
 		const previous = icons.get(name);
 		if (previous) throw new Error(`[fast-vite:svg-icons] 图标组件名冲突 ${JSON.stringify(name)}：${previous.relativePath} 与 ${relativePath}`);
 
@@ -98,13 +101,13 @@ export async function scanSvgIcons(root: string, options: SvgIconsPluginOptions 
 /**
  * 将扫描结果渲染为单个 Vue 组件模块。
  *
- * 生成代码依赖消费项目中的 `vue`，不会要求 JSX 转换器。SVG 内部标记通过
- * `innerHTML` 写入，因此扫描目录只能包含受信任的仓库资源。
+ * 生成代码依赖消费项目中的 `vue`，不会要求 JSX 转换器。SVG 内部标记通过 `innerHTML`
+ * 写入，因此扫描目录只能包含受信任的仓库资源。
  *
  * @param icons - 已完成命名、解析并按名称排序的 SVG 图标。
  * @returns 可写入 TypeScript 文件的 Vue 图标模块源码。
  */
-export function renderSvgIconModule(icons: readonly ScannedSvgIcon[]): string {
+function renderSvgIconModule(icons: readonly ScannedSvgIcon[]): string {
 	const lines = [
 		"/* eslint-disable */",
 		"/* prettier-ignore */",
@@ -137,8 +140,9 @@ export function renderSvgIconModule(icons: readonly ScannedSvgIcon[]): string {
  *
  * @param options - SVG 目录、输出文件、命名、过滤和根属性配置。
  * @returns 可直接加入 Vite `plugins` 的 SVG 图标生成插件。
+ * @throws 路径、扩展名、防抖参数或生成绑定名无效时抛出异常。
  */
-export function createSvgIconsPlugin(options: SvgIconsPluginOptions = {}): Plugin {
+export function svgIcons(options: SvgIconsPluginOptions = {}): Plugin {
 	const resolved = resolveOptions(options);
 	let config: ResolvedConfig;
 
@@ -170,7 +174,7 @@ export function createSvgIconsPlugin(options: SvgIconsPluginOptions = {}): Plugi
 			};
 
 			server.watcher.on("all", handle);
-			server.httpServer?.once("close", () => {
+			onServerClose(server, () => {
 				server.watcher.off("all", handle);
 				schedule.cancel();
 			});
@@ -191,6 +195,11 @@ function resolveOptions(options: SvgIconsPluginOptions): ResolvedOptions {
 	if (options.debounce !== undefined && (!Number.isFinite(options.debounce) || options.debounce < 0)) {
 		throw new Error("[fast-vite:svg-icons] debounce 必须是大于或等于 0 的有限数值。");
 	}
+	const output = options.output ?? "src/icons/index.generated.ts";
+	if (!/\.[cm]?ts$/i.test(output)) {
+		throw new Error("[fast-vite:svg-icons] output 必须使用 TypeScript 输出扩展名 .ts、.mts 或 .cts。");
+	}
+	if (options.dir !== undefined && !options.dir.trim()) throw new Error("[fast-vite:svg-icons] dir 不能为空路径。");
 	return {
 		componentPrefix: options.componentPrefix ?? "",
 		componentSuffix: options.componentSuffix ?? "Icon",
@@ -200,9 +209,7 @@ function resolveOptions(options: SvgIconsPluginOptions): ResolvedOptions {
 		dir: options.dir ?? "src/assets/icons",
 		include: options.include,
 		name: options.name,
-		output: options.output ?? "src/icons/index.generated.ts",
+		output,
 		removeDimensions: options.removeDimensions ?? false,
 	};
 }
-
-export type { ParsedSvg, ScannedSvgIcon, SvgAttributeValue, SvgIconNameContext, SvgIconsPluginOptions } from "./type";

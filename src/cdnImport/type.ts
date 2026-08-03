@@ -47,7 +47,7 @@ export interface ResolvedCdnModule extends CdnModule {
 	version: string;
 }
 
-/** `createCdnImportPlugin` 的配置。 */
+/** `cdnImport` 的配置。 */
 export interface CdnImportPluginOptions {
 	/** CDN 模块或按 Vite mode 动态返回模块的函数。 */
 	modules: CdnModule | CdnModuleResolver | readonly (CdnModule | CdnModuleResolver)[];

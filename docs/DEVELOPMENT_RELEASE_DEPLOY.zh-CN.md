@@ -13,7 +13,7 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-要求 Node.js `^22.18.0 || >=24.11.0`、pnpm 11。`.nvmrc` 选择 Node 22；`packageManager` 固定仓库验证过的 pnpm 版本。
+要求 Node.js `^22.18.0 || ^24.18.0`、pnpm `^11.0.0`。`.nvmrc` 固定最低验证线 `22.18.0`；仓库不声明 `packageManager` 范围值，CI 明确安装 pnpm 11。
 
 ## 2. 正确同步远端
 
@@ -64,17 +64,16 @@ git diff --check
 
 ## 4. 准备版本
 
-npm 版本不可覆盖。当前仓库的目标版本已经是 `2.0.0`；发布前先查询注册表，确认该版本仍未被占用：
+npm 版本不可覆盖。发布前先从 `package.json` 读取目标版本并查询注册表，确认该版本仍未被占用：
 
 ```bash
 git switch master
 git pull --ff-only origin master
 git status --short
-npm view fast-vite-plugins versions --json
-pnpm install --lockfile-only
+pnpm view fast-vite-plugins versions --json
 ```
 
-如果查询结果已经包含 `2.0.0`，立即停止首次发布流程，按语义化版本选择新的版本（例如修复版 `2.0.1`），再执行 `pnpm version <新版本> --no-git-tag-version` 并同步更新 changelog。不要覆盖、复用或删除已经发布的 npm 版本。
+如果查询结果已经包含目标版本，立即停止发布流程，按语义化版本选择新版本，再执行 `pnpm version <新版本> --no-git-tag-version` 并同步更新 changelog。不要覆盖、复用或删除已经发布的 npm 版本。
 
 随后更新 `CHANGELOG.md`，并执行完整发布预检：
 
@@ -89,10 +88,10 @@ pnpm --config.ignore-scripts=true pack --dry-run
 
 ```bash
 git add package.json pnpm-lock.yaml CHANGELOG.md
-git commit -m "release: v2.0.0"
-git tag -a v2.0.0 -m "fast-vite-plugins v2.0.0"
+git commit -m "release: v<version>"
+git tag -a v<version> -m "fast-vite-plugins v<version>"
 git push origin master
-git push origin v2.0.0
+git push origin v<version>
 ```
 
 标签必须指向已经通过质量门禁、版本和 changelog 一致的提交。不要先打标签再补文件。
@@ -102,31 +101,31 @@ git push origin v2.0.0
 仅在受信任工作站和已登录 npm 的前提下执行：
 
 ```bash
-npm login
+pnpm login
 pnpm check
 pnpm --config.ignore-scripts=true pack --dry-run
-npm publish --access public
+pnpm publish --access public
 ```
 
-根 `package.json` 是唯一公开包清单。必须在仓库根目录直接执行上述命令；发布没有自动生命周期门禁，因此只有在质量门禁和归档预览均通过后才能运行 `npm publish --access public`。发布流程不会复制、同步或改写另一份 package.json。
+根 `package.json` 是唯一公开包清单，必须在仓库根目录直接执行上述命令。`prepack` 会再次执行 `pnpm check`；CI 只验证、不持有 npm 凭证也不自动发布。发布流程不会复制、同步或改写另一份 package.json。
 
 仓库不配置自动 npm 发布工作流。发布者必须确认本地检出的是已推送并打标签的目标提交；不要把 npm token 写入仓库、`.npmrc` 或命令历史。
 
 发布后核对：
 
 ```bash
-npm view fast-vite-plugins@2.0.0 version
-pnpm add -D fast-vite-plugins@2.0.0
+pnpm view fast-vite-plugins@<version> version
+pnpm add -D fast-vite-plugins@<version>
 ```
 
-建议在一个最小 Vite 8 项目中完成一次安装、类型检查和构建冒烟测试。
+建议在最小 Vite 7 和 Vite 8 项目中分别完成一次安装、类型检查和构建冒烟测试。
 
 ## 7. “部署”应如何理解
 
 本仓库是 npm 插件库，不运行服务，也没有单独的网站部署步骤。发布完成后，消费项目安装指定版本：
 
 ```bash
-pnpm add -D fast-vite-plugins@2.0.0
+pnpm add -D fast-vite-plugins@<version>
 pnpm build
 ```
 

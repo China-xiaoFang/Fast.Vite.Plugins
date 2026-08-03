@@ -5,44 +5,38 @@ import { test } from "node:test";
 
 import { build } from "vite";
 
-import {
-	createBundleBudgetPlugin,
-	createDevRestartPlugin,
-	createSubresourceIntegrity,
-	evaluateBundleBudgets,
-	injectSubresourceIntegrity,
-	matchesWatchedPath,
-} from "../dist/index.mjs";
+import { bundleBudget, compression, devRestart, subresourceIntegrity } from "../dist/index.mjs";
 
-test("bundle budgets evaluate per-file, total and missing-match rules", async () => {
-	const results = await evaluateBundleBudgets(
-		[
-			{ fileName: "assets/app.js", source: "12345", type: "chunk" },
-			{ fileName: "assets/app.css", source: "123", type: "asset" },
-			{ fileName: "assets/app.js.map", source: "ignored", type: "asset" },
-		],
-		[
+test("bundle budget reports per-file, total and missing-match failures", async () => {
+	const plugin = bundleBudget({
+		onExceed: "warn",
+		budgets: [
 			{ name: "scripts", filter: /\.js$/, limit: 4 },
-			{ name: "code", filter: /\.(?:css|js)$/, limit: 8, scope: "total" },
+			{ name: "code", filter: /\.(?:css|js)$/, limit: 7, scope: "total" },
 			{ name: "images", filter: /\.png$/, limit: 10, requireMatch: true },
-		]
+		],
+	});
+	const warnings = [];
+	await plugin.generateBundle.handler.call(
+		{ error: assert.fail, warn: (message) => warnings.push(message) },
+		{},
+		{
+			"assets/app.js": { code: "12345", fileName: "assets/app.js", type: "chunk" },
+			"assets/app.css": { fileName: "assets/app.css", source: "123", type: "asset" },
+			"assets/app.js.map": { fileName: "assets/app.js.map", source: "ignored", type: "asset" },
+		}
 	);
-
-	assert.deepEqual(
-		results.map(({ actualBytes, exceeded, missingMatch, name }) => ({ actualBytes, exceeded, missingMatch, name })),
-		[
-			{ actualBytes: 5, exceeded: true, missingMatch: false, name: "scripts" },
-			{ actualBytes: 8, exceeded: false, missingMatch: false, name: "code" },
-			{ actualBytes: 0, exceeded: true, missingMatch: true, name: "images" },
-		]
-	);
+	assert.equal(warnings.length, 1);
+	assert.match(warnings[0], /scripts: assets\/app\.js/);
+	assert.match(warnings[0], /code: 合计 8 B > 7 B/);
+	assert.match(warnings[0], /images: requireMatch/);
 });
 
-test("new plugin factories reject ambiguous or unsafe configuration", () => {
-	assert.throws(() => createBundleBudgetPlugin({ budgets: [] }), /budgets/);
+test("plugin functions reject ambiguous or unsafe configuration", () => {
+	assert.throws(() => bundleBudget({ budgets: [] }), /budgets/);
 	assert.throws(
 		() =>
-			createBundleBudgetPlugin({
+			bundleBudget({
 				budgets: [
 					{ limit: 1, name: "same" },
 					{ limit: 2, name: "same" },
@@ -50,8 +44,10 @@ test("new plugin factories reject ambiguous or unsafe configuration", () => {
 			}),
 		/不能重复/
 	);
-	assert.throws(() => createDevRestartPlugin({ paths: "schema/**/*.json" }), /glob/);
-	assert.throws(() => createSubresourceIntegrity("content", []), /algorithms/);
+	assert.throws(() => devRestart({ paths: "schema/**/*.json" }), /glob/);
+	assert.throws(() => subresourceIntegrity({ algorithms: [] }), /algorithms/);
+	assert.throws(() => compression({ minRatio: Number.NaN }), /有限数值/);
+	assert.throws(() => bundleBudget({ budgets: [{ limit: 1 }, { limit: 2, name: "budget-1" }] }), /不能重复/);
 });
 
 test("bundle budget plugin can fail a real Vite Web application build", async () => {
@@ -60,7 +56,7 @@ test("bundle budget plugin can fail a real Vite Web application build", async ()
 		build({
 			root,
 			logLevel: "silent",
-			plugins: [createBundleBudgetPlugin({ budgets: [{ filter: /\.js$/, limit: 1, requireMatch: true }] })],
+			plugins: [bundleBudget({ budgets: [{ filter: /\.js$/, limit: 1, requireMatch: true }] })],
 			build: {
 				minify: false,
 				write: false,
@@ -70,30 +66,44 @@ test("bundle budget plugin can fail a real Vite Web application build", async ()
 	);
 });
 
-test("SRI helpers hash local build assets without touching remote URLs", () => {
-	const integrity = createSubresourceIntegrity("console.log('fast')", ["sha384", "sha512"]);
-	const result = injectSubresourceIntegrity(
-		'<script type="module" src="/app/assets/app.js?v=1"></script><link rel="stylesheet" href="./assets/app.css"><script src="https://other.example/app.js"></script>',
-		{
-			base: "/app/",
-			htmlFileName: "index.html",
-			integrities: { "assets/app.css": integrity, "assets/app.js": integrity },
-		}
+test("post-build plugin order is accepted forward and rejected in reverse", async () => {
+	const root = path.resolve("tests/fixtures/integration");
+	const buildOptions = {
+		root,
+		logLevel: "silent",
+		build: { rollupOptions: { external: ["external-library", "virtual:test-config"] }, write: false },
+	};
+	await build({
+		...buildOptions,
+		plugins: [subresourceIntegrity(), bundleBudget({ budgets: [{ limit: Number.MAX_SAFE_INTEGER }] }), compression()],
+	});
+	await assert.rejects(
+		build({
+			...buildOptions,
+			plugins: [compression(), bundleBudget({ budgets: [{ limit: 1 }] }), subresourceIntegrity()],
+		}),
+		/顺序必须是 subresource-integrity/
 	);
-
-	assert.match(integrity, /^sha384-[A-Za-z\d+/]+=* sha512-[A-Za-z\d+/]+=*$/);
-	assert.equal(result.injected.length, 2);
-	assert.deepEqual(result.missing, []);
-	assert.equal((result.html.match(/ integrity=/g) ?? []).length, 2);
-	assert.match(result.html, /https:\/\/other\.example\/app\.js/);
 });
 
-test("dev restart path matching handles exact files and directory descendants", () => {
-	const directory = path.resolve("tests/fixtures");
-	const file = path.resolve("package.json");
-	assert.equal(matchesWatchedPath(path.join(directory, "integration/index.html"), [{ directory: true, path: directory }]), true);
-	assert.equal(matchesWatchedPath(file, [{ directory: false, path: file }]), true);
-	assert.equal(matchesWatchedPath(path.resolve("README.md"), [{ directory: false, path: file }]), false);
+test("SRI injects only local assets, preserves attributes and skips comments", () => {
+	const plugin = subresourceIntegrity({ algorithms: ["sha384", "sha512"], overwrite: false });
+	plugin.configResolved({ base: "https://example.com/app/", plugins: [plugin] });
+	const bundle = {
+		"assets/app.js": { code: "console.log('fast')", fileName: "assets/app.js", type: "chunk" },
+		"index.html": {
+			fileName: "index.html",
+			source: '<!-- <script src="/app/commented.js"></script> --><script data-label="a > b" crossorigin="use-credentials" src="/app/assets/app.js"></script><script src="https://example.com/outside.js"></script><script src="/outside.js"></script>',
+			type: "asset",
+		},
+	};
+	plugin.generateBundle.handler.call({ emitFile: assert.fail, error: assert.fail }, {}, bundle);
+	const html = bundle["index.html"].source;
+	assert.equal((html.match(/ integrity=/g) ?? []).length, 1);
+	assert.match(html, /data-label="a > b" crossorigin="use-credentials"[^>]+integrity="sha384-[^"]+ sha512-[^"]+"/);
+	assert.doesNotMatch(html, /commented\.js" integrity=/);
+	assert.match(html, /https:\/\/example\.com\/outside\.js/);
+	assert.match(html, /src="\/outside\.js"/);
 });
 
 test("dev restart plugin debounces watched changes and runs its hook", async () => {
@@ -108,7 +118,7 @@ test("dev restart plugin debounces watched changes and runs its hook", async () 
 	const watcher = new FakeWatcher();
 	const restarts = [];
 	const beforeRestart = [];
-	const plugin = createDevRestartPlugin({
+	const plugin = devRestart({
 		paths: "tests/fixtures",
 		debounce: 5,
 		log: false,
@@ -129,4 +139,38 @@ test("dev restart plugin debounces watched changes and runs its hook", async () 
 	assert.equal(beforeRestart.length, 1);
 	assert.match(beforeRestart[0].file, /main\.js$/);
 	plugin.buildEnd();
+});
+
+test("dev restart disposal clears work queued while a restart is running", async () => {
+	class FakeWatcher extends EventEmitter {
+		add() {}
+	}
+	const watcher = new FakeWatcher();
+	let release;
+	const running = new Promise((resolve) => {
+		release = resolve;
+	});
+	let restartCount = 0;
+	const plugin = devRestart({
+		paths: "tests/fixtures",
+		debounce: 0,
+		log: false,
+		beforeRestart: () => running,
+	});
+	const server = {
+		config: { root: path.resolve("."), logger: { error: assert.fail, info: assert.fail } },
+		restart: async () => {
+			restartCount += 1;
+		},
+		watcher,
+	};
+	await plugin.configureServer(server);
+	const file = path.resolve("tests/fixtures/integration/index.html");
+	watcher.emit("all", "change", file);
+	await new Promise((resolve) => setTimeout(resolve, 5));
+	watcher.emit("all", "change", file);
+	watcher.emit("close");
+	release();
+	await new Promise((resolve) => setTimeout(resolve, 10));
+	assert.equal(restartCount, 1);
 });

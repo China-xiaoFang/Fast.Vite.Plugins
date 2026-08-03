@@ -1,3 +1,5 @@
+import type { ViteDevServer } from "vite";
+
 /** 同步值或异步结果。 */
 export type Awaitable<T> = Promise<T> | T;
 /** JSON 支持的原始值。 */
@@ -25,8 +27,10 @@ export function createDebouncedTask(task: () => Awaitable<void>, delay: number, 
 	let timer: NodeJS.Timeout | undefined;
 	let running: Promise<void> | undefined;
 	let queued = false;
+	let disposed = false;
 
 	const execute = (): void => {
+		if (disposed) return;
 		if (running) {
 			queued = true;
 			return;
@@ -36,7 +40,7 @@ export function createDebouncedTask(task: () => Awaitable<void>, delay: number, 
 			.catch(onError)
 			.finally(() => {
 				running = undefined;
-				if (queued) {
+				if (queued && !disposed) {
 					queued = false;
 					schedule();
 				}
@@ -44,6 +48,7 @@ export function createDebouncedTask(task: () => Awaitable<void>, delay: number, 
 	};
 
 	const schedule = ((): void => {
+		if (disposed) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout((): void => {
 			timer = undefined;
@@ -52,11 +57,25 @@ export function createDebouncedTask(task: () => Awaitable<void>, delay: number, 
 	}) as DebouncedTask;
 
 	schedule.cancel = (): void => {
-		if (!timer) return;
-		clearTimeout(timer);
+		disposed = true;
+		if (timer) clearTimeout(timer);
 		timer = undefined;
 		queued = false;
 	};
 
 	return schedule;
+}
+
+/** 在普通 HTTP 与 middleware mode 下都注册一次性的开发服务器清理逻辑。 */
+export function onServerClose(server: Pick<ViteDevServer, "httpServer" | "watcher">, cleanup: () => void): void {
+	let disposed = false;
+	const close = (): void => {
+		if (disposed) return;
+		disposed = true;
+		server.httpServer?.off("close", close);
+		server.watcher.off("close", close);
+		cleanup();
+	};
+	server.httpServer?.once("close", close);
+	server.watcher.once("close", close);
 }

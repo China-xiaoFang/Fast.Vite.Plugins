@@ -4,6 +4,8 @@ import path from "node:path";
 import type { BuildInfoContext, BuildInfoPluginOptions, BuildInformation } from "./type";
 import type { ConfigEnv, Plugin, ResolvedConfig } from "vite";
 
+export type { BuildInfoContext, BuildInformation, BuildInfoPluginOptions } from "./type";
+
 const RESOLVED_PREFIX = "\0fast-vite-plugins:";
 
 /**
@@ -15,7 +17,7 @@ const RESOLVED_PREFIX = "\0fast-vite-plugins:";
  * @returns 可直接序列化为 JSON 的构建信息。
  * @throws 无法得到有效版本号，或 package.json 不是合法 JSON 时抛出异常。
  */
-export async function createBuildInformation(root: string, options: BuildInfoPluginOptions, env: ConfigEnv): Promise<BuildInformation> {
+async function resolveBuildInformation(root: string, options: BuildInfoPluginOptions, env: ConfigEnv): Promise<BuildInformation> {
 	const version = options.version ?? (await readPackageVersion(path.resolve(root, options.packageJson ?? "package.json")));
 	if (!version) throw new Error("[fast-vite:build-info] 无法读取项目版本，请配置 version 或有效的 packageJson。");
 
@@ -37,8 +39,9 @@ export async function createBuildInformation(root: string, options: BuildInfoPlu
  *
  * @param options - 版本来源、输出文件、开发端点和虚拟模块配置。
  * @returns 可直接加入 Vite `plugins` 的构建信息插件。
+ * @throws 产物文件名或虚拟模块 ID 无效时抛出异常。
  */
-export function createBuildInfoPlugin(options: BuildInfoPluginOptions = {}): Plugin {
+export function buildInfo(options: BuildInfoPluginOptions = {}): Plugin {
 	const fileName = normalizeOutputFile(options.fileName ?? "build-info.json");
 	const virtualModuleId = options.virtualModuleId ?? "virtual:fast-vite/build-info";
 	if (virtualModuleId && !virtualModuleId.startsWith("virtual:")) {
@@ -60,7 +63,7 @@ export function createBuildInfoPlugin(options: BuildInfoPluginOptions = {}): Plu
 		},
 		async configResolved(resolvedConfig): Promise<void> {
 			config = resolvedConfig;
-			information = createBuildInformation(config.root, options, env);
+			information = resolveBuildInformation(config.root, options, env);
 			await information;
 		},
 		resolveId(id): string | undefined {
@@ -121,5 +124,3 @@ async function readPackageVersion(packageFile: string): Promise<string> {
 		throw error;
 	}
 }
-
-export type { BuildInfoContext, BuildInformation, BuildInfoPluginOptions } from "./type";
