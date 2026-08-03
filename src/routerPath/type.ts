@@ -10,7 +10,7 @@ export interface RouterMetaContext {
 	defaultName: string;
 }
 
-/** `createRouterMetaPlugin` 的配置。 */
+/** `routerMeta` 的配置。 */
 export interface RouterMetaPluginOptions {
 	/** 页面目录，相对于 Vite `root`。 @defaultValue `"src/views"` */
 	dir?: string;

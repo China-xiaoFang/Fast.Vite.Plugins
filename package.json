@@ -1,23 +1,12 @@
 {
 	"name": "fast-vite-plugins",
-	"version": "2.0.0",
+	"version": "2.0.1",
 	"description": "Production-grade, typed and composable Vite plugins for modern Web applications.",
 	"type": "module",
 	"keywords": [
 		"fast",
-		"build-info",
-		"build-tools",
-		"bundle-budget",
-		"cdn",
-		"compression",
-		"env",
-		"integrity",
-		"sri",
-		"svg",
-		"typescript",
 		"vite",
-		"vite-plugin",
-		"vue"
+		"vite-plugin"
 	],
 	"license": "Apache-2.0",
 	"homepage": "https://gitee.com/FastDotnet/Fast.Vite.Plugins#readme",
@@ -31,14 +20,14 @@
 	"author": "小方",
 	"files": [
 		"CHANGELOG.md",
-		"CONTRIBUTING.md",
 		"Fast.png",
 		"LICENSE",
 		"README.md",
 		"README.zh.md",
 		"SECURITY.md",
 		"dist",
-		"docs"
+		"docs",
+		"src"
 	],
 	"main": "./dist/index.mjs",
 	"module": "./dist/index.mjs",
@@ -46,8 +35,7 @@
 	"exports": {
 		".": {
 			"types": "./dist/index.d.mts",
-			"import": "./dist/index.mjs",
-			"default": "./dist/index.mjs"
+			"import": "./dist/index.mjs"
 		},
 		"./package.json": "./package.json"
 	},
@@ -62,10 +50,16 @@
 		"lint:fix": "eslint . --fix",
 		"format": "prettier --write .",
 		"format:check": "prettier --check .",
-		"test": "pnpm run test:types && node --test tests/*.test.mjs",
+		"test": "pnpm run build && pnpm run test:types && pnpm run test:runtime && pnpm run test:integration && pnpm run test:package",
 		"test:types": "tsc --noEmit --project tests/tsconfig.json",
-		"check": "pnpm run build && pnpm run typecheck && pnpm run lint && pnpm run format:check && pnpm run test",
+		"test:runtime": "node --test tests/cdn.test.mjs tests/generators.test.mjs tests/platform-plugins.test.mjs tests/static-copy.test.mjs tests/utilities.test.mjs",
+		"test:integration": "node --test tests/vite-integration.test.mjs",
+		"test:package": "node --test tests/package-contract.test.mjs",
+		"check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run format:check",
 		"prepack": "pnpm run check"
+	},
+	"peerDependencies": {
+		"vite": "^7.0.0 || ^8.0.0"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.0",
@@ -82,14 +76,10 @@
 		"tsdown": "^0.22.14",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.65.0",
-		"vite": "^8.0.0"
-	},
-	"peerDependencies": {
-		"vite": "^8.0.0"
+		"vite": "^8.2.0"
 	},
 	"engines": {
-		"node": "^22.18.0 || >=24.11.0",
+		"node": "^22.18.0 || ^24.18.0",
 		"pnpm": "^11.0.0"
-	},
-	"packageManager": "pnpm@11.16.0"
+	}
 }

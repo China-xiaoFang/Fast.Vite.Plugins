@@ -26,7 +26,7 @@ export function toPascalCase(value: string, fallback = "GeneratedComponent"): st
 	let identifier = words
 		.map((word) => {
 			const [first = "", ...rest] = Array.from(word);
-			return `${first.toLocaleUpperCase()}${rest.join("")}`;
+			return `${first.toUpperCase()}${rest.join("")}`;
 		})
 		.join("");
 	identifier = identifier.replace(/[^\p{ID_Continue}$\u200C\u200D]/gu, "");
@@ -44,4 +44,58 @@ export function toPascalCase(value: string, fallback = "GeneratedComponent"): st
  */
 export function isValidIdentifier(value: string): boolean {
 	return /^[$_\p{ID_Start}][$\u200C\u200D\p{ID_Continue}]*$/u.test(value);
+}
+
+const RESERVED_BINDING_NAMES = new Set([
+	"await",
+	"break",
+	"case",
+	"catch",
+	"class",
+	"const",
+	"continue",
+	"debugger",
+	"default",
+	"delete",
+	"do",
+	"else",
+	"enum",
+	"export",
+	"extends",
+	"false",
+	"finally",
+	"for",
+	"function",
+	"if",
+	"implements",
+	"import",
+	"in",
+	"instanceof",
+	"interface",
+	"let",
+	"new",
+	"null",
+	"package",
+	"private",
+	"protected",
+	"public",
+	"return",
+	"static",
+	"super",
+	"switch",
+	"this",
+	"throw",
+	"true",
+	"try",
+	"typeof",
+	"var",
+	"void",
+	"while",
+	"with",
+	"yield",
+]);
+
+/** 判断名称能否安全地出现在生成模块的词法绑定位置。 */
+export function isValidBindingIdentifier(value: string): boolean {
+	return isValidIdentifier(value) && !RESERVED_BINDING_NAMES.has(value);
 }

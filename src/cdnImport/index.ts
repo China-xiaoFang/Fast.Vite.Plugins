@@ -6,8 +6,11 @@ import { isValidIdentifier } from "../shared/naming";
 import type { CdnImportPluginOptions, CdnModule, CdnModuleResolver, CdnModuleResolverContext, ResolvedCdnModule } from "./type";
 import type { ConfigEnv, HtmlTagDescriptor, Plugin, ResolvedConfig } from "vite";
 
+export type { CdnImportPluginOptions, CdnModule, CdnModuleResolver, CdnModuleResolverContext, CdnTagAttributes } from "./type";
+
 /** jsDelivr 的 npm 文件 URL 模板，可传给 `CdnImportPluginOptions.urlTemplate`。 */
 export const cdnJsDelivrUrl = "https://cdn.jsdelivr.net/npm/{name}@{version}/{path}";
+
 /** unpkg 的 npm 文件 URL 模板，可传给 `CdnImportPluginOptions.urlTemplate`。 */
 export const cdnUnpkgUrl = "https://unpkg.com/{name}@{version}/{path}";
 
@@ -28,6 +31,14 @@ interface Replacement {
 	content: string;
 }
 
+interface GeneratedSourceMap {
+	version: 3;
+	names: string[];
+	sources: string[];
+	sourcesContent: string[];
+	mappings: string;
+}
+
 /**
  * 使用模块名、版本和文件路径渲染 CDN URL。
  *
@@ -38,7 +49,7 @@ interface Replacement {
  * @returns 渲染后的完整 URL，或原样保留的绝对资源 URL。
  * @throws 模板需要 `{version}` 但没有可用版本时抛出异常。
  */
-export function renderCdnUrl(template: string, data: { name: string; path: string; version: string }): string {
+function renderCdnUrl(template: string, data: { name: string; path: string; version: string }): string {
 	if (/^(?:https?:)?\/\//i.test(data.path) || /^(?:data|blob):/i.test(data.path)) return data.path;
 	if (!data.version && template.includes("{version}")) {
 		throw new Error(`[fast-vite:cdn-import] 无法确定 ${data.name} 的版本；请显式配置 version。`);
@@ -53,7 +64,7 @@ export function renderCdnUrl(template: string, data: { name: string; path: strin
  * @returns 仅包含安全属性访问的 `globalThis` 表达式。
  * @throws 任一名称片段不是合法 ECMAScript 标识符时抛出异常。
  */
-export function globalExpression(globalName: string): string {
+function globalExpression(globalName: string): string {
 	const parts = globalName.split(".");
 	if (parts.some((part) => !isValidIdentifier(part))) {
 		throw new Error(`[fast-vite:cdn-import] 非法浏览器全局变量：${globalName}`);
@@ -62,27 +73,38 @@ export function globalExpression(globalName: string): string {
 }
 
 /**
- * 根据 Vite/Rollup 已解析的 ESTree，把 import 与 re-export 转换为浏览器全局变量访问。
- * 直接使用语法树边界，不会误改注释、字符串或业务代码，也不引入运行时解析依赖。
+ * 按 Vite 提供的 ESTree 节点范围转换 import、re-export 与动态 import。
+ *
+ * 仅处理配置为 CDN 外部依赖的模块，不扫描或替换注释、字符串和普通业务代码。
  *
  * @param code - Vite 当前转换钩子收到的模块源码。
- * @param externals - 模块名到浏览器全局变量路径的映射。
+ * @param externals - 模块名到浏览器全局变量路径的自有属性映射。
  * @param parsedProgram - 由 Vite 插件上下文解析的 ESTree Program。
- * @returns 有替换时返回源码和空 sourcemap，否则返回 `undefined`。
+ * @param sourceName - 写入 source map 的源码标识。
+ * @returns 有替换时返回转换代码与可组合的精确 source map，否则返回 `undefined`。
  */
-export function transformCdnImports(
+function transformCdnImports(
 	code: string,
 	externals: Readonly<Record<string, string>>,
-	parsedProgram: unknown
-): { code: string; map: null } | undefined {
+	parsedProgram: unknown,
+	sourceName = "source.js"
+): { code: string; map: GeneratedSourceMap } | undefined {
 	const program = parsedProgram as AstProgram;
 	if (!Array.isArray(program?.body)) return undefined;
 
 	const replacements: Replacement[] = [];
+	const usedBindings = collectIdentifierNames(program);
+	const allocateBinding = (base: string): string => {
+		let candidate = base;
+		let suffix = 1;
+		while (usedBindings.has(candidate)) candidate = `${base}_${suffix++}`;
+		usedBindings.add(candidate);
+		return candidate;
+	};
 	let exportIndex = 0;
 	for (const node of program.body) {
 		const moduleName = sourceValue(node.source);
-		if (!moduleName || !(moduleName in externals)) continue;
+		if (!moduleName || !Object.hasOwn(externals, moduleName)) continue;
 		const expression = globalExpression(externals[moduleName] ?? "");
 
 		if (node.type === "ImportDeclaration") {
@@ -90,7 +112,7 @@ export function transformCdnImports(
 			continue;
 		}
 		if (node.type === "ExportNamedDeclaration") {
-			replacements.push({ ...nodeRange(node), content: renderNamedExport(node, expression, exportIndex) });
+			replacements.push({ ...nodeRange(node), content: renderNamedExport(node, expression, exportIndex, allocateBinding) });
 			exportIndex += 1;
 			continue;
 		}
@@ -102,12 +124,12 @@ export function transformCdnImports(
 	visitAst(program, (node) => {
 		if (node.type !== "ImportExpression") return;
 		const moduleName = sourceValue(node.source);
-		if (!moduleName || !(moduleName in externals)) return;
+		if (!moduleName || !Object.hasOwn(externals, moduleName)) return;
 		replacements.push({ ...nodeRange(node), content: `Promise.resolve(${globalExpression(externals[moduleName] ?? "")})` });
 	});
 
 	if (replacements.length === 0) return undefined;
-	return { code: applyReplacements(code, replacements), map: null };
+	return applyReplacements(code, replacements, sourceName);
 }
 
 /**
@@ -118,7 +140,7 @@ export function transformCdnImports(
  * @param env - 当前 Vite 命令和模式。
  * @returns 按配置顺序补全版本、CSS URL 和 JavaScript URL 的模块列表。
  */
-export async function resolveCdnModules(root: string, options: CdnImportPluginOptions, env: ConfigEnv): Promise<ResolvedCdnModule[]> {
+async function resolveCdnModules(root: string, options: CdnImportPluginOptions, env: ConfigEnv): Promise<ResolvedCdnModule[]> {
 	const urlTemplate = options.urlTemplate ?? cdnJsDelivrUrl;
 	const configured = (Array.isArray(options.modules) ? options.modules : [options.modules]) as readonly (CdnModule | CdnModuleResolver)[];
 	if (configured.length === 0) throw new Error("[fast-vite:cdn-import] modules 至少需要一个模块。");
@@ -147,8 +169,14 @@ export async function resolveCdnModules(root: string, options: CdnImportPluginOp
  *
  * @param options - CDN 模块、版本解析、开发模式、SSR 与标签配置。
  * @returns 可直接加入 Vite `plugins` 的 CDN 导入插件。
+ * @throws 模块、别名、URL、全局变量或标签枚举无效时抛出异常。
  */
-export function createCdnImportPlugin(options: CdnImportPluginOptions): Plugin {
+export function cdnImport(options: CdnImportPluginOptions): Plugin {
+	if (options.modules === undefined) throw new Error("[fast-vite:cdn-import] modules 至少需要一个模块。");
+	if (options.urlTemplate !== undefined && !options.urlTemplate.trim()) throw new Error("[fast-vite:cdn-import] urlTemplate 不能为空。");
+	if (options.crossorigin !== undefined && ![false, "anonymous", "use-credentials"].includes(options.crossorigin)) {
+		throw new Error("[fast-vite:cdn-import] crossorigin 只能是 false、anonymous 或 use-credentials。");
+	}
 	let config: ResolvedConfig;
 	let env: ConfigEnv;
 	let modules: ResolvedCdnModule[] = [];
@@ -165,10 +193,10 @@ export function createCdnImportPlugin(options: CdnImportPluginOptions): Plugin {
 			modules = await resolveCdnModules(config.root, options, env);
 			externalMap = createExternalMap(modules);
 		},
-		transform(code, _id, transformOptions): { code: string; map: null } | undefined {
+		transform(code, id, transformOptions): ReturnType<typeof transformCdnImports> {
 			if (transformOptions?.ssr && options.ssr !== true) return undefined;
 			if (config.command === "serve" && options.dev !== true) return undefined;
-			return transformCdnImports(code, externalMap, this.parse(code));
+			return transformCdnImports(code, externalMap, this.parse(code), id);
 		},
 		transformIndexHtml(): HtmlTagDescriptor[] {
 			if (config.command === "serve" && options.dev !== true) return [];
@@ -234,7 +262,7 @@ function renderImportDeclaration(node: AstNode, expression: string): string {
 	return declarations.join("\n");
 }
 
-function renderNamedExport(node: AstNode, expression: string, exportIndex: number): string {
+function renderNamedExport(node: AstNode, expression: string, exportIndex: number, allocateBinding: (base: string) => string): string {
 	if (node.exportKind === "type") return "";
 	const specifiers = Array.isArray(node.specifiers) ? (node.specifiers as AstNode[]) : [];
 	const declarations: string[] = [];
@@ -244,7 +272,7 @@ function renderNamedExport(node: AstNode, expression: string, exportIndex: numbe
 		const importedName = identifierName(specifier.local);
 		const exportedName = identifierName(specifier.exported);
 		if (!importedName || !exportedName) continue;
-		const localName = `__fast_cdn_export_${exportIndex}_${index}`;
+		const localName = allocateBinding(`__fast_cdn_export_${exportIndex}_${index}`);
 		declarations.push(`const ${localName} = ${propertyAccess(expression, importedName)};`);
 		exports.push(`${localName} as ${exportedName}`);
 	}
@@ -278,15 +306,91 @@ function nodeRange(node: AstNode): Pick<Replacement, "end" | "start"> {
 	return { end: node.end, start: node.start };
 }
 
-function applyReplacements(code: string, replacements: Replacement[]): string {
-	let transformed = code;
-	let previousStart = Number.POSITIVE_INFINITY;
-	for (const replacement of replacements.sort((left, right) => right.start - left.start)) {
-		if (replacement.end > previousStart) continue;
-		transformed = `${transformed.slice(0, replacement.start)}${replacement.content}${transformed.slice(replacement.end)}`;
-		previousStart = replacement.start;
+function applyReplacements(code: string, replacements: Replacement[], sourceName: string): { code: string; map: GeneratedSourceMap } {
+	const accepted: Replacement[] = [];
+	let previousEnd = -1;
+	for (const replacement of replacements.sort((left, right) => left.start - right.start)) {
+		if (replacement.start < previousEnd) continue;
+		accepted.push(replacement);
+		previousEnd = replacement.end;
 	}
-	return transformed;
+
+	let transformed = "";
+	const origins: number[] = [];
+	let cursor = 0;
+	const append = (value: string, originalStart: number, copied: boolean): void => {
+		transformed += value;
+		for (let index = 0; index < value.length; index += 1) origins.push(copied ? originalStart + index : originalStart);
+	};
+	for (const replacement of accepted) {
+		append(code.slice(cursor, replacement.start), cursor, true);
+		append(replacement.content, replacement.start, false);
+		cursor = replacement.end;
+	}
+	append(code.slice(cursor), cursor, true);
+
+	return {
+		code: transformed,
+		map: createSourceMap(code, transformed, origins, sourceName),
+	};
+}
+
+function collectIdentifierNames(program: AstProgram): Set<string> {
+	const names = new Set<string>();
+	visitAst(program, (node) => {
+		if (node.type === "Identifier" && typeof node.name === "string") names.add(node.name);
+	});
+	return names;
+}
+
+function createSourceMap(source: string, generated: string, origins: readonly number[], sourceName: string): GeneratedSourceMap {
+	const originalPositions: { column: number; line: number }[] = [];
+	let line = 0;
+	let column = 0;
+	for (let index = 0; index <= source.length; index += 1) {
+		originalPositions.push({ column, line });
+		if (source[index] === "\n") {
+			line += 1;
+			column = 0;
+		} else column += 1;
+	}
+
+	const lines: string[][] = [[]];
+	let generatedColumn = 0;
+	let previousSource = 0;
+	let previousOriginalLine = 0;
+	let previousOriginalColumn = 0;
+	for (let index = 0; index < generated.length; index += 1) {
+		const position = originalPositions[origins[index] ?? source.length] ?? { column: 0, line: 0 };
+		const segment =
+			encodeVlq(generatedColumn - (lines.at(-1)?.length ? generatedColumn - 1 : 0)) +
+			encodeVlq(0 - previousSource) +
+			encodeVlq(position.line - previousOriginalLine) +
+			encodeVlq(position.column - previousOriginalColumn);
+		lines.at(-1)?.push(segment);
+		previousSource = 0;
+		previousOriginalLine = position.line;
+		previousOriginalColumn = position.column;
+		if (generated[index] === "\n") {
+			lines.push([]);
+			generatedColumn = 0;
+		} else generatedColumn += 1;
+	}
+	return { version: 3, names: [], sources: [sourceName], sourcesContent: [source], mappings: lines.map((items) => items.join(",")).join(";") };
+}
+
+const BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+function encodeVlq(value: number): string {
+	let vlq = value < 0 ? (-value << 1) | 1 : value << 1;
+	let encoded = "";
+	do {
+		let digit = vlq & 31;
+		vlq >>>= 5;
+		if (vlq > 0) digit |= 32;
+		encoded += BASE64[digit] ?? "";
+	} while (vlq > 0);
+	return encoded;
 }
 
 function visitAst(value: unknown, visitor: (node: AstNode) => void): void {
@@ -327,21 +431,26 @@ function toArray(value: string | readonly string[] | undefined): readonly string
 }
 
 function validateModule(module: CdnModule): void {
-	if (!module.name) throw new Error("[fast-vite:cdn-import] 模块 name 不能为空。");
+	if (!module || typeof module !== "object" || Array.isArray(module)) throw new Error("[fast-vite:cdn-import] 模块配置必须是对象。");
+	if (!module.name?.trim()) throw new Error("[fast-vite:cdn-import] 模块 name 不能为空。");
 	if (!module.global) throw new Error(`[fast-vite:cdn-import] ${module.name} 的 global 不能为空。`);
-	if (toArray(module.js).length === 0) throw new Error(`[fast-vite:cdn-import] ${module.name} 至少需要一个 JavaScript 文件。`);
+	if (toArray(module.js).length === 0 || toArray(module.js).some((file) => typeof file !== "string" || !file.trim())) {
+		throw new Error(`[fast-vite:cdn-import] ${module.name} 至少需要一个非空 JavaScript 文件。`);
+	}
+	if (toArray(module.css).some((file) => typeof file !== "string" || !file.trim())) {
+		throw new Error(`[fast-vite:cdn-import] ${module.name} 的 CSS 文件不能为空。`);
+	}
+	if (module.aliases?.some((alias) => !alias.trim())) throw new Error(`[fast-vite:cdn-import] ${module.name} 的 aliases 不能包含空名称。`);
 	globalExpression(module.global);
 }
 
 function createExternalMap(modules: readonly ResolvedCdnModule[]): Record<string, string> {
-	const result: Record<string, string> = {};
+	const result: Record<string, string> = Object.create(null) as Record<string, string>;
 	for (const module of modules) {
 		for (const name of [module.name, ...(module.aliases ?? [])]) {
-			if (name in result) throw new Error(`[fast-vite:cdn-import] 模块名或别名重复：${name}`);
+			if (Object.hasOwn(result, name)) throw new Error(`[fast-vite:cdn-import] 模块名或别名重复：${name}`);
 			result[name] = module.global;
 		}
 	}
 	return result;
 }
-
-export type { CdnImportPluginOptions, CdnModule, CdnModuleResolver, CdnModuleResolverContext, CdnTagAttributes, ResolvedCdnModule } from "./type";

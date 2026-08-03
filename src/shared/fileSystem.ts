@@ -1,4 +1,4 @@
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { lstat, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 import { compareStrings } from "./naming";
@@ -20,7 +20,14 @@ export function normalizePath(filePath: string): string {
  * @returns 去点号、转小写且去重后的只读集合。
  */
 export function normalizeExtensions(extensions: readonly string[]): ReadonlySet<string> {
-	return new Set(extensions.map((extension) => extension.replace(/^\./, "").toLowerCase()));
+	if (!Array.isArray(extensions)) throw new TypeError("extensions 必须是字符串数组。");
+	const normalized = extensions.map((extension) => {
+		if (typeof extension !== "string" || !/^\.?[a-z\d]+$/i.test(extension)) {
+			throw new Error(`非法文件扩展名：${String(extension)}`);
+		}
+		return extension.replace(/^\./, "").toLowerCase();
+	});
+	return new Set(normalized);
 }
 
 /**
@@ -54,7 +61,15 @@ export function isPathInside(parent: string, candidate: string): boolean {
  */
 export function isSafeOutputFileName(fileName: string): boolean {
 	const normalized = normalizePath(fileName);
-	return Boolean(normalized) && !normalized.startsWith("/") && !/^[a-z]:\//i.test(normalized) && !normalized.split("/").includes("..");
+	const segments = normalized.split("/");
+	return (
+		Boolean(normalized) &&
+		normalized !== "." &&
+		!normalized.endsWith("/") &&
+		!normalized.startsWith("/") &&
+		!/^[a-z]:\//i.test(normalized) &&
+		segments.every((segment) => segment !== "" && segment !== "." && segment !== "..")
+	);
 }
 
 /**
@@ -67,6 +82,9 @@ export function isSafeOutputFileName(fileName: string): boolean {
  * @throws 目标越出基准目录时抛出异常。
  */
 export function resolvePathInside(base: string, configuredPath: string, feature: string): string {
+	if (!isSafeOutputFileName(configuredPath)) {
+		throw new Error(`[fast-vite:${feature}] 输出路径必须位于 Vite root 内且是安全相对文件路径：${configuredPath}`);
+	}
 	const resolved = path.resolve(base, configuredPath);
 	if (!isPathInside(base, resolved)) {
 		throw new Error(`[fast-vite:${feature}] 输出路径必须位于 Vite root 内：${configuredPath}`);
@@ -124,6 +142,7 @@ export async function scanFiles(directory: string, options: ScanFilesOptions = {
  * @returns 实际写入时返回 `true`，内容未变化时返回 `false`。
  */
 export async function writeFileIfChanged(filePath: string, content: string | Uint8Array): Promise<boolean> {
+	await assertNoSymbolicLinks(filePath);
 	let current: Buffer | undefined;
 	try {
 		current = await readFile(filePath);
@@ -137,6 +156,23 @@ export async function writeFileIfChanged(filePath: string, content: string | Uin
 	await mkdir(path.dirname(filePath), { recursive: true });
 	await writeFile(filePath, next);
 	return true;
+}
+
+async function assertNoSymbolicLinks(filePath: string): Promise<void> {
+	const resolved = path.resolve(filePath);
+	const root = path.parse(resolved).root;
+	let current = root;
+	for (const segment of path.relative(root, resolved).split(path.sep).filter(Boolean)) {
+		current = path.join(current, segment);
+		try {
+			if ((await lstat(current)).isSymbolicLink()) {
+				throw new Error(`拒绝通过 symlink 或 junction 写入生成文件：${filePath}`);
+			}
+		} catch (error) {
+			if (error instanceof Error && "code" in error && error.code === "ENOENT") return;
+			throw error;
+		}
+	}
 }
 
 /**

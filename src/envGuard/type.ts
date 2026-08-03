@@ -1,8 +1,8 @@
 /** 单个环境变量的存在性、格式和值域规则。 */
 export interface EnvRule {
-	/** 是否必须存在。 @defaultValue `true` */
+	/** 是否必须存在；只控制 `undefined`，不允许空值时仍由 `allowEmpty` 单独校验。 @defaultValue `true` */
 	required?: boolean;
-	/** 是否允许空字符串。 @defaultValue `false` */
+	/** 是否允许已提供的空字符串，与 `required` 相互独立。 @defaultValue `false` */
 	allowEmpty?: boolean;
 	/** 字符串必须匹配的正则表达式。 */
 	pattern?: RegExp;
@@ -25,7 +25,7 @@ export interface EnvValidationIssue {
 	message: string;
 }
 
-/** `createEnvGuardPlugin` 的配置。 */
+/** `envGuard` 的配置。 */
 export interface EnvGuardPluginOptions {
 	/** 要校验的环境变量规则。 */
 	schema: EnvSchema;

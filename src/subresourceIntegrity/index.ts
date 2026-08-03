@@ -3,28 +3,30 @@ import path from "node:path";
 
 import { isSafeOutputFileName, normalizePath } from "../shared/fileSystem";
 import { compareStrings } from "../shared/naming";
+import { assertPostBuildPluginOrder } from "../shared/order";
 
 import type {
-	InjectSubresourceIntegrityOptions,
+	IntegrityInjectionOptions,
+	IntegrityInjectionResult,
 	SubresourceIntegrityAlgorithm,
 	SubresourceIntegrityFilter,
-	SubresourceIntegrityInjectionResult,
 	SubresourceIntegrityPluginOptions,
 } from "./type";
 import type { Plugin, ResolvedConfig } from "vite";
 
+export type { IntegrityCrossorigin, SubresourceIntegrityAlgorithm, SubresourceIntegrityFilter, SubresourceIntegrityPluginOptions } from "./type";
+
 const DEFAULT_FILTER = /\.(?:css|m?js)$/i;
-const HTML_TAG_PATTERN = /<(?:link|script)\b[^>]*>/gi;
 const SUPPORTED_ALGORITHMS = new Set<SubresourceIntegrityAlgorithm>(["sha256", "sha384", "sha512"]);
 
 /**
  * 为内容生成符合浏览器 SRI 语法的一个或多个摘要。
  *
  * @param content - 最终写入构建产物的字节或 UTF-8 字符串。
- * @param algorithms - 摘要算法；重复项会删除但保留首次出现顺序。
- * @returns 以空格连接、可直接写入 HTML `integrity` 属性的摘要。
+ * @param algorithms - 摘要算法；重复项去重并保留首次出现顺序。
+ * @returns 以空格连接、可直接写入 `integrity` 属性的摘要。
  */
-export function createSubresourceIntegrity(
+function generateIntegrity(
 	content: string | Uint8Array,
 	algorithms: SubresourceIntegrityAlgorithm | readonly SubresourceIntegrityAlgorithm[] = "sha384"
 ): string {
@@ -34,29 +36,36 @@ export function createSubresourceIntegrity(
 }
 
 /**
- * 给 HTML 中指向本次构建产物的 script、stylesheet 和 modulepreload 标签注入 SRI。
+ * 给 HTML 中属于当前构建的 script、stylesheet 和 modulepreload 标签注入 SRI。
  *
- * 完整 URL 仅在与 Vite 绝对 `base` 同源且位于其路径下时视为本地产物；其他远程 URL、
- * `data:`、`blob:` 与页面锚点保持不变。函数不依赖 DOM，可在 Node.js 构建阶段复用。
+ * 只有与绝对 `base` 同源且位于其路径边界内的 URL 才视为本地产物；注释、远程 URL、
+ * `data:`、`blob:` 和页面锚点保持不变。
  *
  * @param html - 构建后的 HTML 源码。
- * @param options - HTML 文件位置、Vite base、摘要映射和属性覆盖策略。
- * @returns 转换后的 HTML、成功注入文件和缺失本地资源列表。
+ * @param options - HTML 文件名、Vite base、摘要映射与覆盖策略。
+ * @returns 转换后的 HTML、已注入产物和缺失本地资源。
  */
-export function injectSubresourceIntegrity(html: string, options: InjectSubresourceIntegrityOptions): SubresourceIntegrityInjectionResult {
+function injectIntegrity(html: string, options: IntegrityInjectionOptions): IntegrityInjectionResult {
+	if (!options.integrities || typeof options.integrities !== "object" || Array.isArray(options.integrities)) {
+		throw new Error("[fast-vite:subresource-integrity] integrities 必须是对象。");
+	}
 	const injected = new Set<string>();
 	const missing = new Set<string>();
 	const htmlFileName = normalizePath(options.htmlFileName ?? "index.html");
 	const base = options.base ?? "/";
 	const crossorigin = options.crossorigin ?? "anonymous";
 	const overwrite = options.overwrite ?? true;
+	if (!isSafeOutputFileName(htmlFileName)) throw new Error("[fast-vite:subresource-integrity] htmlFileName 必须是安全的构建产物名。");
+	if (options.crossorigin !== undefined && ![false, "anonymous", "use-credentials"].includes(options.crossorigin)) {
+		throw new Error("[fast-vite:subresource-integrity] crossorigin 只能是 false、anonymous 或 use-credentials。");
+	}
 
-	const transformed = html.replace(HTML_TAG_PATTERN, (tag) => {
+	const transformed = transformHtmlTags(html, (tag) => {
 		const resourceUrl = eligibleResourceUrl(tag);
 		if (!resourceUrl) return tag;
 		const fileName = resolveHtmlResource(resourceUrl, htmlFileName, base);
 		if (fileName === undefined) return tag;
-		const integrity = options.integrities[fileName];
+		const integrity = Object.hasOwn(options.integrities, fileName) ? options.integrities[fileName] : undefined;
 		if (!integrity) {
 			missing.add(resourceUrl);
 			return tag;
@@ -64,7 +73,9 @@ export function injectSubresourceIntegrity(html: string, options: InjectSubresou
 		if (!overwrite && hasAttribute(tag, "integrity")) return tag;
 
 		let nextTag = setAttribute(tag, "integrity", integrity);
-		if (crossorigin !== false) nextTag = setAttribute(nextTag, "crossorigin", crossorigin);
+		if (crossorigin !== false && (overwrite || !hasAttribute(tag, "crossorigin"))) {
+			nextTag = setAttribute(nextTag, "crossorigin", crossorigin);
+		}
 		injected.add(fileName);
 		return nextTag;
 	});
@@ -84,8 +95,12 @@ export function injectSubresourceIntegrity(html: string, options: InjectSubresou
  *
  * @param options - 摘要算法、资源过滤、CORS、覆盖、清单和严格模式配置。
  * @returns 可直接加入 Vite `plugins` 的 Subresource Integrity 插件。
+ * @throws 算法、CORS、清单、资源映射或产物顺序无效时抛出异常。
  */
-export function createSubresourceIntegrityPlugin(options: SubresourceIntegrityPluginOptions = {}): Plugin {
+export function subresourceIntegrity(options: SubresourceIntegrityPluginOptions = {}): Plugin {
+	if (options.crossorigin !== undefined && ![false, "anonymous", "use-credentials"].includes(options.crossorigin)) {
+		throw new Error("[fast-vite:subresource-integrity] crossorigin 只能是 false、anonymous 或 use-credentials。");
+	}
 	const algorithms = normalizeAlgorithms(options.algorithms ?? "sha384");
 	const filter = options.filter ?? DEFAULT_FILTER;
 	const manifestFileName = resolveManifestFileName(options.manifest);
@@ -97,6 +112,7 @@ export function createSubresourceIntegrityPlugin(options: SubresourceIntegrityPl
 		enforce: "post",
 		configResolved(resolvedConfig): void {
 			config = resolvedConfig;
+			assertPostBuildPluginOrder(resolvedConfig);
 		},
 		generateBundle: {
 			order: "post",
@@ -105,14 +121,14 @@ export function createSubresourceIntegrityPlugin(options: SubresourceIntegrityPl
 				for (const output of Object.values(bundle).sort((left, right) => compareStrings(left.fileName, right.fileName))) {
 					if (!matchesFilter(output.fileName, output.type, filter)) continue;
 					const content = output.type === "chunk" ? output.code : output.source;
-					integrities[output.fileName] = createSubresourceIntegrity(content, algorithms);
+					integrities[output.fileName] = generateIntegrity(content, algorithms);
 				}
 
 				const missing = new Set<string>();
 				for (const output of Object.values(bundle)) {
 					if (output.type !== "asset" || !/\.html?$/i.test(output.fileName)) continue;
 					const source = typeof output.source === "string" ? output.source : Buffer.from(output.source).toString("utf8");
-					const result = injectSubresourceIntegrity(source, {
+					const result = injectIntegrity(source, {
 						htmlFileName: output.fileName,
 						base: config.base,
 						integrities,
@@ -187,8 +203,10 @@ function resolveHtmlResource(resourceUrl: string, htmlFileName: string, base: st
 
 	let candidate: string;
 	if (resourcePath.startsWith("/")) {
-		const basePath = absoluteBase?.pathname ?? (base.startsWith("/") ? base : "/");
-		candidate = resourcePath.startsWith(basePath) ? resourcePath.slice(basePath.length) : resourcePath.slice(1);
+		const configuredBasePath = absoluteBase?.pathname ?? (base.startsWith("/") ? base : "/");
+		const basePath = configuredBasePath.endsWith("/") ? configuredBasePath : `${configuredBasePath}/`;
+		if (!resourcePath.startsWith(basePath)) return undefined;
+		candidate = resourcePath.slice(basePath.length);
 	} else {
 		candidate = path.posix.join(path.posix.dirname(htmlFileName), resourcePath);
 	}
@@ -200,6 +218,40 @@ function resolveHtmlResource(resourceUrl: string, htmlFileName: string, base: st
 	}
 	const normalized = path.posix.normalize(candidate).replace(/^\.\//, "");
 	return normalized.startsWith("../") ? undefined : normalized;
+}
+
+function transformHtmlTags(html: string, transform: (tag: string) => string): string {
+	let output = "";
+	let cursor = 0;
+	let index = 0;
+	while (index < html.length) {
+		if (html.startsWith("<!--", index)) {
+			const commentEnd = html.indexOf("-->", index + 4);
+			index = commentEnd < 0 ? html.length : commentEnd + 3;
+			continue;
+		}
+		if (html[index] !== "<" || !/^<(?:link|script)\b/i.test(html.slice(index))) {
+			index += 1;
+			continue;
+		}
+
+		let quote: "'" | '"' | undefined;
+		let end = index + 1;
+		for (; end < html.length; end += 1) {
+			const character = html[end];
+			if (quote) {
+				if (character === quote) quote = undefined;
+				continue;
+			}
+			if (character === '"' || character === "'") quote = character;
+			else if (character === ">") break;
+		}
+		if (end >= html.length) break;
+		output += html.slice(cursor, index) + transform(html.slice(index, end + 1));
+		cursor = end + 1;
+		index = cursor;
+	}
+	return output + html.slice(cursor);
 }
 
 function readAttribute(tag: string, name: string): string | undefined {
@@ -234,12 +286,3 @@ function parseHttpUrl(value: string): URL | undefined {
 		return undefined;
 	}
 }
-
-export type {
-	InjectSubresourceIntegrityOptions,
-	IntegrityCrossorigin,
-	SubresourceIntegrityAlgorithm,
-	SubresourceIntegrityFilter,
-	SubresourceIntegrityInjectionResult,
-	SubresourceIntegrityPluginOptions,
-} from "./type";

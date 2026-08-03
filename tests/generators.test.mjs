@@ -1,86 +1,117 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import { mkdir, mkdtemp, readFile, rmdir, unlink, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import {
-	extractComponentName,
-	generateRouterMeta,
-	parseSvg,
-	renderComponentDts,
-	renderComponentRegistry,
-	renderSvgIconModule,
-	scanComponents,
-	scanSvgIcons,
-} from "../dist/index.mjs";
+import { componentRegistry, routerMeta, svgIcons } from "../dist/index.mjs";
 
 const workspaceRoot = process.cwd();
 
-test("component registry scans deterministically and renders valid entry files", async () => {
-	const components = await scanComponents(workspaceRoot, { dirs: "tests/fixtures/components" });
-	assert.deepEqual(
-		components.map(({ name, relativePath }) => ({ name, relativePath })),
-		[
-			{ name: "BaseButton", relativePath: "base-button.vue" },
-			{ name: "Form", relativePath: "form/index.vue" },
-		]
+function configure(plugin, root) {
+	plugin.configResolved({ logger: { error: assert.fail, warn: assert.fail }, root });
+	return plugin;
+}
+
+test("component, router and SVG generators expose their behavior through plugin hooks", async () => {
+	const root = await mkdtemp(path.join(tmpdir(), "fast-vite-generators-"));
+	const componentsDirectory = path.join(root, "components");
+	const formDirectory = path.join(componentsDirectory, "form");
+	const viewsDirectory = path.join(root, "views");
+	const iconsDirectory = path.join(root, "icons");
+	await mkdir(formDirectory, { recursive: true });
+	await mkdir(viewsDirectory);
+	await mkdir(iconsDirectory);
+	await writeFile(path.join(componentsDirectory, "base-button.vue"), "<template><button /></template>");
+	await writeFile(path.join(formDirectory, "index.vue"), "<template><form /></template>");
+	await writeFile(
+		path.join(viewsDirectory, "home.vue"),
+		String.raw`// defineOptions({ name: "CommentName" })
+defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, name: "HomePage" });`
 	);
-
-	const registry = renderComponentRegistry(path.join(workspaceRoot, "src/components/index.generated.ts"), components);
-	assert.match(registry, /app\.component\("BaseButton", BaseButton\)/);
-	assert.doesNotMatch(registry, /@ts-nocheck/);
-
-	const declarations = renderComponentDts(path.join(workspaceRoot, "types/components.generated.d.ts"), components);
-	assert.match(declarations, /declare module "vue"/);
-	assert.match(declarations, /BaseButton:/);
-});
-
-test("component registry rejects duplicate component names", async () => {
-	await assert.rejects(
-		scanComponents(workspaceRoot, {
-			dirs: "tests/fixtures/components",
-			name: () => "Duplicate",
-		}),
-		/组件名称冲突/
+	await writeFile(
+		path.join(viewsDirectory, "plain.vue"),
+		'// defineOptions({ name: "CommentName" })\ndefineOptions({ enabled: true }); const later = { name: "LaterName" };'
 	);
+	await writeFile(path.join(iconsDirectory, "add.svg"), '<svg width="24" height="24"><path fill="currentColor" /></svg>');
+
+	const registryFile = path.join(root, "generated/components.ts");
+	const declarationsFile = path.join(root, "generated/components.d.ts");
+	const routesFile = path.join(root, "generated/routes.json");
+	const iconsFile = path.join(root, "generated/icons.ts");
+	try {
+		await configure(
+			componentRegistry({ dirs: "components", output: "generated/components.ts", dts: "generated/components.d.ts" }),
+			root
+		).buildStart();
+		const registry = await readFile(registryFile, "utf8");
+		const declarations = await readFile(declarationsFile, "utf8");
+		assert.match(registry, /app\.component\("BaseButton", BaseButton\)/);
+		assert.match(registry, /app\.component\("Form", Form\)/);
+		assert.doesNotMatch(registry, /@ts-nocheck/);
+		assert.match(declarations, /declare module "vue"/);
+		assert.match(declarations, /BaseButton:/);
+
+		await configure(routerMeta({ dir: "views", output: "generated/routes.json" }), root).buildStart();
+		assert.deepEqual(JSON.parse(await readFile(routesFile, "utf8")), {
+			"/views/home.vue": "HomePage",
+			"/views/plain.vue": "Plain",
+		});
+
+		await configure(svgIcons({ dir: "icons", output: "generated/icons.ts", removeDimensions: true }), root).buildStart();
+		const iconModule = await readFile(iconsFile, "utf8");
+		assert.match(iconModule, /export const AddIcon/);
+		assert.match(iconModule, /"viewBox":"0 0 24 24"/);
+		assert.doesNotMatch(iconModule, /"width"/);
+		assert.match(iconModule, /h\("svg"/);
+	} finally {
+		await unlink(registryFile);
+		await unlink(declarationsFile);
+		await unlink(routesFile);
+		await unlink(iconsFile);
+		await unlink(path.join(componentsDirectory, "base-button.vue"));
+		await unlink(path.join(formDirectory, "index.vue"));
+		await unlink(path.join(viewsDirectory, "home.vue"));
+		await unlink(path.join(viewsDirectory, "plain.vue"));
+		await unlink(path.join(iconsDirectory, "add.svg"));
+		await rmdir(formDirectory);
+		await rmdir(componentsDirectory);
+		await rmdir(viewsDirectory);
+		await rmdir(iconsDirectory);
+		await rmdir(path.join(root, "generated"));
+		await rmdir(root);
+	}
 });
 
-test("file generators reject output paths outside the Vite root", async () => {
-	await assert.rejects(
-		scanComponents(workspaceRoot, { dirs: "tests/fixtures/components", output: "../components.generated.ts" }),
-		/必须位于 Vite root 内/
+test("generator plugins reject conflicts, unsupported outputs and paths outside root", async () => {
+	assert.throws(() => componentRegistry({ output: "types/components.d.ts", dts: "types/components.d.ts" }), /不能指向同一文件/);
+	assert.throws(() => componentRegistry({ output: "src/components.js" }), /TypeScript/);
+	assert.throws(() => componentRegistry({ dts: "types/components.ts" }), /\.d\.ts/);
+	assert.throws(() => svgIcons({ output: "src/icons.js" }), /TypeScript/);
+
+	const componentPlugin = configure(componentRegistry({ dirs: "tests/fixtures/components", output: "../components.ts" }), workspaceRoot);
+	await assert.rejects(componentPlugin.buildStart(), /必须位于 Vite root 内/);
+	const routerPlugin = configure(routerMeta({ dir: "tests/fixtures/views", output: "../routes.json" }), workspaceRoot);
+	await assert.rejects(routerPlugin.buildStart(), /必须位于 Vite root 内/);
+
+	const duplicatePlugin = configure(
+		componentRegistry({ dirs: "tests/fixtures/components", output: "duplicate.generated.ts", dts: false, name: () => "Duplicate" }),
+		workspaceRoot
 	);
-	await assert.rejects(
-		generateRouterMeta(workspaceRoot, { dir: "tests/fixtures/views", output: "../routes.generated.json" }),
-		/必须位于 Vite root 内/
-	);
+	await assert.rejects(duplicatePlugin.buildStart(), /组件名称冲突/);
 });
 
-test("component names support valid Unicode identifiers", async () => {
-	const components = await scanComponents(workspaceRoot, {
-		dirs: "tests/fixtures/components",
-		include: ({ relativePath }) => relativePath === "base-button.vue",
-		name: () => "按钮",
-	});
-	assert.equal(components[0].name, "按钮");
-});
-
-test("router metadata extracts defineOptions and emits stable root-relative paths", async () => {
-	assert.equal(extractComponentName('defineOptions({ name: "DashboardPage" })'), "DashboardPage");
-	const map = await generateRouterMeta(workspaceRoot, { dir: "tests/fixtures/views" });
-	assert.deepEqual(map, { "/tests/fixtures/views/home.vue": "HomePage" });
-});
-
-test("SVG icons preserve SVG semantics and generate wrapper-free Vue components", async () => {
-	const parsed = parseSvg('<svg width="16" height="12"><path fill="currentColor" /></svg>');
-	assert.equal(parsed.attributes.viewBox, "0 0 16 12");
-	assert.match(parsed.content, /currentColor/);
-
-	const icons = await scanSvgIcons(workspaceRoot, { dir: "tests/fixtures/icons", removeDimensions: true });
-	assert.equal(icons[0] && icons[0].name, "ActionsAddIcon");
-	assert.equal(icons[0] && icons[0].attributes.width, undefined);
-	assert.equal(icons[0] && icons[0].attributes.viewBox, "0 0 24 24");
-
-	const moduleSource = renderSvgIconModule(icons);
-	assert.match(moduleSource, /h\("svg"/);
-	assert.doesNotMatch(moduleSource, /tsx/i);
+test("generator watchers clean up when a middleware-mode server closes", () => {
+	class FakeWatcher extends EventEmitter {
+		add() {}
+	}
+	for (const plugin of [componentRegistry(), routerMeta(), svgIcons()]) {
+		const watcher = new FakeWatcher();
+		plugin.configResolved({ logger: { error: assert.fail }, root: workspaceRoot });
+		plugin.configureServer({ httpServer: null, watcher });
+		assert.ok(watcher.listenerCount("all") > 0);
+		watcher.emit("close");
+		assert.equal(watcher.listenerCount("all"), 0);
+	}
 });

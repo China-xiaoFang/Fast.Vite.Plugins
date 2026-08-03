@@ -11,7 +11,7 @@ export interface DevRestartContext {
 	event: DevRestartEvent;
 }
 
-/** `createDevRestartPlugin` 的配置。 */
+/** `devRestart` 的配置。 */
 export interface DevRestartPluginOptions {
 	/**
 	 * 要监听的文件或目录，相对于 Vite `root`；也允许绝对路径。
@@ -42,7 +42,7 @@ export interface DevRestartPluginOptions {
 	log?: boolean;
 }
 
-/** 已解析的监听目标；用于 `matchesWatchedPath` 或自定义监听实现。 */
+/** 插件内部使用的已解析监听目标。 */
 export interface ResolvedRestartPath {
 	/** 规范化后的绝对路径。 */
 	path: string;

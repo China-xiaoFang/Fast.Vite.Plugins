@@ -11,4 +11,3 @@ export * from "./routerPath";
 export * from "./staticCopy";
 export * from "./subresourceIntegrity";
 export * from "./virtualModules";
-export type { Awaitable, JsonPrimitive, JsonValue } from "./shared/plugin";

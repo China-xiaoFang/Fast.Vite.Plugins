@@ -1,26 +1,46 @@
 {
 	"compilerOptions": {
+		// 按 ES2022 语义检查源码；发布产物的运行时目标由 tsdown 单独指定。
 		"target": "ES2022",
+		// 同时加载 ES2022 与 DOM 标准库，覆盖 Node.js 插件实现和生成的浏览器代码类型。
 		"lib": ["ES2022", "DOM"],
-		"module": "ESNext",
-		"moduleResolution": "Bundler",
+		// 强制所有输入按模块处理，避免无 import/export 文件退化为全局脚本。
 		"moduleDetection": "force",
+		// 保留 ESM 语法交由 tsdown 打包。
+		"module": "ESNext",
+		// 按打包器规则解析模块，支持 package.json 的 exports 等现代能力。
+		"moduleResolution": "Bundler",
+		// 让仓库源码检查直接解析根入口；发布声明消费者测试不会继承该路径映射。
 		"paths": {
 			"fast-vite-plugins": ["./src/index.ts"]
 		},
+		// 仅加载 Node.js 全局类型，避免测试框架或其他环境类型污染源码。
 		"types": ["node"],
+		// 启用全部严格类型检查。
 		"strict": true,
+		// 派生类覆盖基类成员时必须显式使用 override，避免意外同名。
 		"noImplicitOverride": true,
+		// 索引访问结果包含 undefined，强制调用方处理越界或缺失键。
 		"noUncheckedIndexedAccess": true,
+		// 未使用的局部变量视为错误，避免无效实现残留。
 		"noUnusedLocals": true,
+		// 未使用的函数参数视为错误；有意忽略时应调整签名或明确命名。
 		"noUnusedParameters": true,
+		// TypeScript 仅负责类型检查，JavaScript 与声明产物统一由 tsdown 生成。
 		"noEmit": true,
+		// 兼容以默认导入方式使用 CommonJS 模块。
 		"esModuleInterop": true,
+		// 防止不同大小写的导入路径在跨平台构建时产生差异。
 		"forceConsistentCasingInFileNames": true,
+		// 保证每个文件可以独立转换，避免使用打包器无法安全处理的跨文件语义。
 		"isolatedModules": true,
+		// 保留源码中的 ESM 导入导出形式，并要求类型导入使用 type 修饰符。
 		"verbatimModuleSyntax": true,
+		// 源码检查跳过第三方声明以减少外部噪声；发布声明消费者测试单独使用 false。
 		"skipLibCheck": true
 	},
+	// 检查插件源码、示例和构建配置。
 	"include": ["src", "examples", "tsdown.config.ts"],
+	// 排除依赖、发布产物和测试覆盖率结果，避免重复或陈旧文件参与源码检查。
 	"exclude": ["node_modules", "dist", "coverage"]
 }

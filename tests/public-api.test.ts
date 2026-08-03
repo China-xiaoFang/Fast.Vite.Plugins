@@ -1,17 +1,19 @@
 import {
-	createBuildInfoPlugin,
-	createBundleBudgetPlugin,
-	createCdnImportPlugin,
-	createComponentRegistryPlugin,
-	createCompressionPlugin,
-	createDevRestartPlugin,
-	createEnvGuardPlugin,
-	createHtmlTemplatePlugin,
-	createRouterMetaPlugin,
-	createStaticCopyPlugin,
-	createSubresourceIntegrityPlugin,
-	createSvgIconsPlugin,
-	createVirtualModulesPlugin,
+	buildInfo,
+	bundleBudget,
+	cdnImport,
+	cdnJsDelivrUrl,
+	cdnUnpkgUrl,
+	componentRegistry,
+	compression,
+	devRestart,
+	envGuard,
+	htmlTemplate,
+	routerMeta,
+	staticCopy,
+	subresourceIntegrity,
+	svgIcons,
+	virtualModules,
 } from "fast-vite-plugins";
 
 import type {
@@ -31,36 +33,47 @@ import type {
 } from "fast-vite-plugins";
 import type { Plugin } from "vite";
 
-const buildInfo: BuildInfoPluginOptions = { version: "2.0.0" };
-const bundleBudget: BundleBudgetPluginOptions = { budgets: [{ filter: /\.js$/, limit: 250_000 }] };
-const cdnImport: CdnImportPluginOptions = {
+const buildInfoOptions: BuildInfoPluginOptions = { version: "2.0.0" };
+const bundleBudgetOptions: BundleBudgetPluginOptions = { budgets: [{ filter: /\.js$/, limit: 250_000 }] };
+const cdnImportOptions: CdnImportPluginOptions = {
 	modules: { global: "Vue", js: "dist/vue.global.prod.js", name: "vue", version: "3.5.0" },
 };
-const componentRegistry: ComponentRegistryPluginOptions = { dirs: ["src/components"] };
-const compression: CompressionPluginOptions = { algorithms: ["gzip", "brotli"] };
-const devRestart: DevRestartPluginOptions = { paths: ["config", "schema.json"] };
-const envGuard: EnvGuardPluginOptions = { schema: { VITE_API_URL: { pattern: /^https:\/\// } } };
-const htmlTemplate: HtmlTemplatePluginOptions = { data: { APP_TITLE: "Fast" } };
-const routerMeta: RouterMetaPluginOptions = { dir: "src/views" };
-const staticCopy: StaticCopyPluginOptions = { targets: [{ dest: "LICENSE", src: "LICENSE" }] };
-const subresourceIntegrity: SubresourceIntegrityPluginOptions = { algorithms: ["sha384", "sha512"], manifest: true };
-const svgIcons: SvgIconsPluginOptions = { dir: "src/assets/icons" };
-const virtualModules: VirtualModulesPluginOptions = { modules: { "virtual:config": "export default {};" } };
+const componentRegistryOptions: ComponentRegistryPluginOptions = { dirs: ["src/components"] };
+const compressionOptions: CompressionPluginOptions = { algorithms: ["gzip", "brotli"] };
+const devRestartOptions: DevRestartPluginOptions = { paths: ["config", "schema.json"] };
+const envGuardOptions: EnvGuardPluginOptions = { schema: { VITE_API_URL: { pattern: /^https:\/\// } } };
+const htmlTemplateOptions: HtmlTemplatePluginOptions = { data: { APP_TITLE: "Fast" } };
+const routerMetaOptions: RouterMetaPluginOptions = { dir: "src/views" };
+const staticCopyOptions: StaticCopyPluginOptions = { targets: [{ dest: "LICENSE", src: "LICENSE" }] };
+const subresourceIntegrityOptions: SubresourceIntegrityPluginOptions = { algorithms: ["sha384", "sha512"], manifest: true };
+const svgIconsOptions: SvgIconsPluginOptions = { dir: "src/assets/icons" };
+const virtualModulesOptions: VirtualModulesPluginOptions = { modules: { "virtual:config": "export default {};" } };
 
 const individualPlugins: Plugin[] = [
-	createBuildInfoPlugin(buildInfo),
-	createBundleBudgetPlugin(bundleBudget),
-	createCdnImportPlugin(cdnImport),
-	createComponentRegistryPlugin(componentRegistry),
-	createCompressionPlugin(compression),
-	createDevRestartPlugin(devRestart),
-	createEnvGuardPlugin(envGuard),
-	createHtmlTemplatePlugin(htmlTemplate),
-	createRouterMetaPlugin(routerMeta),
-	createStaticCopyPlugin(staticCopy),
-	createSubresourceIntegrityPlugin(subresourceIntegrity),
-	createSvgIconsPlugin(svgIcons),
-	createVirtualModulesPlugin(virtualModules),
+	buildInfo(buildInfoOptions),
+	bundleBudget(bundleBudgetOptions),
+	cdnImport(cdnImportOptions),
+	componentRegistry(componentRegistryOptions),
+	compression(compressionOptions),
+	devRestart(devRestartOptions),
+	envGuard(envGuardOptions),
+	htmlTemplate(htmlTemplateOptions),
+	routerMeta(routerMetaOptions),
+	staticCopy(staticCopyOptions),
+	subresourceIntegrity(subresourceIntegrityOptions),
+	svgIcons(svgIconsOptions),
+	virtualModules(virtualModulesOptions),
 ];
 
 void individualPlugins;
+void cdnJsDelivrUrl;
+void cdnUnpkgUrl;
+
+type PublicApi = typeof import("fast-vite-plugins");
+// @ts-expect-error 转换辅助函数属于内部实现，不是公共 API。
+type _InternalHelperMustNotBePublic = PublicApi["transformCdnImports"];
+
+// @ts-expect-error algorithms 只接受受支持的压缩算法。
+compression({ algorithms: ["zip"] });
+// @ts-expect-error conflict 只接受公开枚举值。
+componentRegistry({ conflict: "replace" });

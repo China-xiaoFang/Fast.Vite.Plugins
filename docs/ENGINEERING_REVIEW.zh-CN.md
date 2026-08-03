@@ -8,11 +8,11 @@
 
 | 领域     | 标准                                                                | 实现与验证                                                        |
 | -------- | ------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| API      | 每个插件使用独立的 `create...Plugin` 工厂，不提供隐式组合入口       | 根入口按名称导出，公共 API 编译测试覆盖全部工厂与选项类型         |
+| API      | 每个插件使用独立的功能名函数，不提供隐式组合入口                    | 根入口按名称导出，公共 API 编译测试覆盖全部插件函数与选项类型     |
 | 模块格式 | Node 22+、ESM-only                                                  | 发布 `.mjs`、`.d.mts` 及对应 sourcemap                            |
 | 构建     | TypeScript 6 + tsdown                                               | 根目录源码统一输出到根目录 `dist/`                                |
 | Lint     | 不引用 Fast.ESLint.Config SDK，在仓库内维护可读规则                 | ESLint 10 flat config 覆盖 JS、TS、import、regexp、JSON、Markdown |
-| 注释     | 公共类型、工厂和辅助函数说明用途、默认值、安全边界与错误条件        | TSDoc 与双语 API 文档共同维护                                     |
+| 注释     | 公共类型和插件函数说明用途、默认值、安全边界与错误条件              | TSDoc 与双语 API 文档共同维护                                     |
 | 路径安全 | 所有生成与复制目标必须位于允许的根目录                              | 组件、路由、SVG、SRI、压缩与静态复制均执行边界检查                |
 | 开发监听 | 防抖任务可取消，服务器关闭后不残留监听器                            | 自动化测试覆盖变更合并、重启和清理                                |
 | 配置诊断 | 空列表、非法路径和无效数值在配置阶段失败                            | 统一使用 `fast-vite:<feature>` 错误前缀                           |
@@ -24,21 +24,21 @@
 
 ## Web 应用适用性审查
 
-| 插件                               | Web 应用场景                    | 审查结论与边界                                                      |
-| ---------------------------------- | ------------------------------- | ------------------------------------------------------------------- |
-| `createComponentRegistryPlugin`    | Vue 组件注册与全局类型          | 保留；只扫描受控源码目录，并对名称冲突和输出越界报错                |
-| `createRouterMetaPlugin`           | 页面文件到路由元数据            | 保留；只做静态分析，不执行应用源码                                  |
-| `createSvgIconsPlugin`             | 仓库 SVG 生成 Vue 图标组件      | 保留；输入必须是可信仓库资源，不承担不可信 SVG 清洗                 |
-| `createCdnImportPlugin`            | 浏览器依赖通过 CDN 全局变量加载 | 保留并显式启用；应固定版本，并验证 CDN、CSP、CORS 和网络可用性      |
-| `createBuildInfoPlugin`            | 版本诊断、灰度与缓存排查        | 保留；生成信息会公开给浏览器，不应写入密钥                          |
-| `createBundleBudgetPlugin`         | CI 中约束 JavaScript/CSS 体积   | 保留；推荐生产门禁使用默认错误模式                                  |
-| `createCompressionPlugin`          | 生成 gzip/Brotli 预压缩资源     | 保留并显式启用；服务器或对象存储必须配置内容协商                    |
-| `createSubresourceIntegrityPlugin` | 校验本地脚本和样式的内容完整性  | 保留；远程 CDN 与 publicDir 资源需要单独处理                        |
-| `createDevRestartPlugin`           | 外部配置变化时重启开发服务器    | 保留；仅监听 Vite 模块图之外的输入                                  |
-| `createStaticCopyPlugin`           | 构建后复制或转换静态资源        | 保留；目标被限制在 `outDir` 内，简单资源仍可优先使用 Vite publicDir |
-| `createVirtualModulesPlugin`       | 注入构建期配置或生成模块        | 保留；消费项目需要为虚拟模块提供类型声明                            |
-| `createEnvGuardPlugin`             | 启动与构建前校验环境变量        | 保留；诊断不输出变量值，浏览器可见变量仍应遵守 `VITE_` 暴露规则     |
-| `createHtmlTemplatePlugin`         | HTML 占位符与标签注入           | 保留；默认转义替换值，仅可信内容才可关闭转义                        |
+| 插件                   | Web 应用场景                    | 审查结论与边界                                                      |
+| ---------------------- | ------------------------------- | ------------------------------------------------------------------- |
+| `componentRegistry`    | Vue 组件注册与全局类型          | 保留；只扫描受控源码目录，并对名称冲突和输出越界报错                |
+| `routerMeta`           | 页面文件到路由元数据            | 保留；只做静态分析，不执行应用源码                                  |
+| `svgIcons`             | 仓库 SVG 生成 Vue 图标组件      | 保留；输入必须是可信仓库资源，不承担不可信 SVG 清洗                 |
+| `cdnImport`            | 浏览器依赖通过 CDN 全局变量加载 | 保留并显式启用；应固定版本，并验证 CDN、CSP、CORS 和网络可用性      |
+| `buildInfo`            | 版本诊断、灰度与缓存排查        | 保留；生成信息会公开给浏览器，不应写入密钥                          |
+| `bundleBudget`         | CI 中约束 JavaScript/CSS 体积   | 保留；推荐生产门禁使用默认错误模式                                  |
+| `compression`          | 生成 gzip/Brotli 预压缩资源     | 保留并显式启用；服务器或对象存储必须配置内容协商                    |
+| `subresourceIntegrity` | 校验本地脚本和样式的内容完整性  | 保留；远程 CDN 与 publicDir 资源需要单独处理                        |
+| `devRestart`           | 外部配置变化时重启开发服务器    | 保留；仅监听 Vite 模块图之外的输入                                  |
+| `staticCopy`           | 构建后复制或转换静态资源        | 保留；目标被限制在 `outDir` 内，简单资源仍可优先使用 Vite publicDir |
+| `virtualModules`       | 注入构建期配置或生成模块        | 保留；消费项目需要为虚拟模块提供类型声明                            |
+| `envGuard`             | 启动与构建前校验环境变量        | 保留；诊断不输出变量值，浏览器可见变量仍应遵守 `VITE_` 暴露规则     |
+| `htmlTemplate`         | HTML 占位符与标签注入           | 保留；默认转义替换值，仅可信内容才可关闭转义                        |
 
 所有公开插件均直接作用于 Web 应用开发或生产构建，没有隐式启用；项目按需逐个导入。
 
@@ -46,15 +46,16 @@
 
 `pnpm check` 统一执行：
 
-1. tsdown ESM、类型声明与 sourcemap 构建；
-2. TypeScript 6 严格类型检查；
-3. 公共 API 编译型测试；
-4. 类型感知 ESLint 10；
-5. Prettier 格式检查；
-6. Node 单元/文件系统测试；
-7. 真实 Vite Web 应用构建、预算失败、SRI 与预压缩一致性集成测试。
+1. TypeScript 6 源码严格类型检查；
+2. 类型感知 ESLint 10；
+3. tsdown ESM、类型声明与 sourcemap 构建；
+4. 基于发布声明的公共 API 消费者类型测试；
+5. Node 运行时与文件系统测试；
+6. 真实 Vite 生命周期和组合集成测试；
+7. ESM-only、运行时导出、source map、版本治理与文档治理包契约测试；
+8. Prettier 格式检查。
 
-发布前必须依次执行 `pnpm check` 和 `pnpm --config.ignore-scripts=true pack --dry-run`。CI 在 Node 22.18 与 24.11 两条受支持运行线使用 Vite 8 执行同一门禁，仅在 Node 24.11 检查归档。标签发布在完整检查通过后才会访问 npm。
+发布前必须依次执行 `pnpm check` 和 `pnpm --config.ignore-scripts=true pack --dry-run`。CI 在 Node 22.18.0 与 24.18.0 两条受支持运行线执行同一门禁，仅在 Node 24.18.0 检查归档；CI 只验证，不自动发布 npm。
 
 ## 明确保留的边界
 

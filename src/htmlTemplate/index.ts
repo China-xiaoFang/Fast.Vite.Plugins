@@ -12,7 +12,7 @@ export interface HtmlTemplateContext extends ConfigEnv {
 	path: string;
 }
 
-/** `createHtmlTemplatePlugin` 的配置。 */
+/** `htmlTemplate` 的配置。 */
 export interface HtmlTemplatePluginOptions {
 	/** 静态模板数据，或根据当前命令、模式和 HTML 路径动态返回的数据。 */
 	data: HtmlTemplateData | ((context: HtmlTemplateContext) => Awaitable<HtmlTemplateData>);
@@ -27,15 +27,14 @@ export interface HtmlTemplatePluginOptions {
 /**
  * 替换 HTML 中的 `{{ KEY }}` 占位符。
  *
- * 未出现在 `data` 中的占位符会保留原样。默认转义五个 HTML 特殊字符，避免把配置值
- * 意外解释为标记或属性。
+ * 未出现在 `data` 中的占位符保留原样；默认转义 HTML 特殊字符，避免配置值被解释为标记。
  *
  * @param html - Vite 当前处理的 HTML 源码。
- * @param data - 占位符名称与可序列化文本值的映射。
+ * @param data - 占位符名称与文本值的映射。
  * @param escape - 是否转义 HTML 特殊字符。
  * @returns 完成已知占位符替换后的 HTML。
  */
-export function replaceHtmlPlaceholders(html: string, data: HtmlTemplateData, escape = true): string {
+function replaceHtmlPlaceholders(html: string, data: HtmlTemplateData, escape = true): string {
 	return html.replace(/\{\{\s*([_a-z][$\w.-]*)\s*\}\}/gi, (placeholder, key: string) => {
 		if (!Object.hasOwn(data, key)) return placeholder;
 		const value = String(data[key]);
@@ -48,8 +47,12 @@ export function replaceHtmlPlaceholders(html: string, data: HtmlTemplateData, es
  *
  * @param options - 模板数据、附加标签、转义与严格模式配置。
  * @returns 可直接加入 Vite `plugins` 的 HTML 模板插件。
+ * @throws 选项或模板数据无效，以及 strict 模式仍有占位符时抛出异常。
  */
-export function createHtmlTemplatePlugin(options: HtmlTemplatePluginOptions): Plugin {
+export function htmlTemplate(options: HtmlTemplatePluginOptions): Plugin {
+	if (!options.data || (typeof options.data !== "function" && (typeof options.data !== "object" || Array.isArray(options.data)))) {
+		throw new Error("[fast-vite:html-template] data 必须是对象或函数。");
+	}
 	let env: ConfigEnv;
 
 	return {
