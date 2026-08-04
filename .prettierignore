@@ -1,5 +1,4 @@
-# 构建产物与依赖目录由工具生成，不参与格式化。
-coverage
+# 构建产物、依赖和缓存由对应工具维护，不参与格式化。
 dist
 node_modules
 .pnpm-store

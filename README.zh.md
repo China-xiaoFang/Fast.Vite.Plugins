@@ -1,13 +1,16 @@
+<p align="left">
+	<strong>简体中文</strong> | <a href="./README.md">English</a>
+</p>
+
+<p align="center">
+	<img src="./Fast.png" alt="logo" width="160" />
+</p>
+
 # fast-vite-plugins
 
-[English](./README.md) | 简体中文
+面向现代 Web 应用的公开开源 Vite 插件库，提供完整类型、独立插件函数、严格安全边界、测试、CI、发布校验和框架级文档。
 
-一个采用 Apache-2.0 许可证、面向现代 Web 应用的公开开源 Vite 插件库。`2.0.1` 提供完整类型、独立插件函数、TypeScript 6、tsdown、安全边界、测试、CI、发布校验和框架级文档。
-
-[![npm](https://img.shields.io/npm/v/fast-vite-plugins)](https://www.npmjs.com/package/fast-vite-plugins)
-[![license](https://img.shields.io/npm/l/fast-vite-plugins)](./LICENSE)
-[![node](https://img.shields.io/badge/node-%5E22.18%20%7C%7C%20%5E24.18-brightgreen)](https://nodejs.org/)
-[![vite](https://img.shields.io/badge/vite-7%20%7C%208-646cff)](https://vite.dev/)
+[![npm](https://img.shields.io/npm/v/fast-vite-plugins)](https://www.npmjs.com/package/fast-vite-plugins) [![node](https://img.shields.io/badge/node-%5E22.18%20%7C%7C%20%5E24.18-brightgreen)](https://nodejs.org/) [![vite](https://img.shields.io/badge/vite-7%20%7C%7C%208-646cff)](https://vite.dev/) [![license](https://img.shields.io/npm/l/fast-vite-plugins)](./LICENSE)
 
 ## 特性
 
@@ -182,7 +185,9 @@ pnpm install --frozen-lockfile
 pnpm check
 ```
 
-`check` 会固定执行 tsdown 构建、源码类型检查、发布声明消费者测试、ESLint、Prettier、运行时与真实 Vite 集成测试，以及公共 API、文档、ESM-only 和归档契约测试。仓库根目录就是公开 npm 包；`pnpm build` 只写入根目录下被忽略的 `dist/`，打包和发布也从仓库根目录执行。
+修改插件时可使用 `pnpm dev` 启动长期运行的 tsdown 监听构建。
+
+`check` 会固定执行 tsdown 构建、源码类型检查、发布声明消费者测试、ESLint、Prettier、运行时与真实 Vite 集成测试，以及公共 API、ESM-only 和归档契约测试。仓库根目录就是公开 npm 包；`pnpm build` 只写入根目录下被忽略的 `dist/`，打包和发布也从仓库根目录执行。
 
 ## 许可证
 

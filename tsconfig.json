@@ -40,7 +40,7 @@
 		"skipLibCheck": true
 	},
 	// 检查插件源码、示例和构建配置。
-	"include": ["src", "examples", "tsdown.config.ts"],
+	"include": ["src", "tsdown.config.ts"],
 	// 排除依赖、发布产物和测试覆盖率结果，避免重复或陈旧文件参与源码检查。
-	"exclude": ["node_modules", "dist", "coverage"]
+	"exclude": ["node_modules", "dist"]
 }

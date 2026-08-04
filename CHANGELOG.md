@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.0.2 - 2026-08-04
+
+- Standardize the bilingual README, repository ignores, editor recommendations, TypeScript configuration, and development workflow with the other Fast frontend SDK repositories.
+- Rename the package contract test to `tests/package.test.mjs` and align package metadata with the canonical FastDotnet project URLs.
+- Preserve the repository-local ESLint, sorting, and formatting implementation without introducing cross-repository dependencies.
+
 ## 2.0.1 - 2026-08-03
 
 - Align Node.js, pnpm, CI, and Node type contracts with the 22.18/24.18 validation lines.
