@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 import { brotliDecompressSync, gunzipSync } from "node:zlib";
 
@@ -115,15 +114,4 @@ test("plugin functions reject empty or unsafe configuration", () => {
 	assert.throws(() => buildInfo({ fileName: "." }), /相对路径/);
 	assert.throws(() => compression({ threshold: Number.POSITIVE_INFINITY }), /有限数值/);
 	assert.throws(() => virtualModules({ modules: {} }), /至少需要一个模块/);
-});
-
-test("published package exposes an ESM-only v2 contract", async () => {
-	const manifest = JSON.parse(await readFile("package.json", "utf8"));
-	assert.equal(manifest.name, "fast-vite-plugins");
-	assert.equal(manifest.version, "2.0.1");
-	assert.equal(manifest.private, undefined);
-	assert.equal(manifest.publishConfig.access, "public");
-	assert.equal(manifest.type, "module");
-	assert.equal(manifest.exports["."].import, "./dist/index.mjs");
-	assert.equal("require" in manifest.exports["."], false);
 });

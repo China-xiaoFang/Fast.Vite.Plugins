@@ -52,7 +52,7 @@
 4. 基于发布声明的公共 API 消费者类型测试；
 5. Node 运行时与文件系统测试；
 6. 真实 Vite 生命周期和组合集成测试；
-7. ESM-only、运行时导出、source map、版本治理与文档治理包契约测试；
+7. ESM-only、运行时导出、source map、版本治理与归档包契约测试；
 8. Prettier 格式检查。
 
 发布前必须依次执行 `pnpm check` 和 `pnpm --config.ignore-scripts=true pack --dry-run`。CI 在 Node 22.18.0 与 24.18.0 两条受支持运行线执行同一门禁，仅在 Node 24.18.0 检查归档；CI 只验证，不自动发布 npm。

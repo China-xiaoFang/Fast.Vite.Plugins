@@ -1,6 +1,6 @@
 {
 	"name": "fast-vite-plugins",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"description": "Production-grade, typed and composable Vite plugins for modern Web applications.",
 	"type": "module",
 	"keywords": [
@@ -9,13 +9,13 @@
 		"vite-plugin"
 	],
 	"license": "Apache-2.0",
-	"homepage": "https://gitee.com/FastDotnet/Fast.Vite.Plugins#readme",
+	"homepage": "https://fastdotnet.com",
 	"bugs": {
-		"url": "https://gitee.com/FastDotnet/Fast.Vite.Plugins/issues"
+		"url": "https://gitee.com/FastDotnet/fast.vite.plugins/issues"
 	},
 	"repository": {
 		"type": "git",
-		"url": "git+https://gitee.com/FastDotnet/Fast.Vite.Plugins.git"
+		"url": "https://gitee.com/FastDotnet/fast.vite.plugins.git"
 	},
 	"author": "小方",
 	"files": [
@@ -44,6 +44,7 @@
 		"access": "public"
 	},
 	"scripts": {
+		"dev": "tsdown --watch",
 		"build": "tsdown",
 		"typecheck": "tsc --noEmit",
 		"lint": "eslint . --max-warnings 0",
@@ -54,7 +55,7 @@
 		"test:types": "tsc --noEmit --project tests/tsconfig.json",
 		"test:runtime": "node --test tests/cdn.test.mjs tests/generators.test.mjs tests/platform-plugins.test.mjs tests/static-copy.test.mjs tests/utilities.test.mjs",
 		"test:integration": "node --test tests/vite-integration.test.mjs",
-		"test:package": "node --test tests/package-contract.test.mjs",
+		"test:package": "node --test tests/package.test.mjs",
 		"check": "pnpm run typecheck && pnpm run lint && pnpm run test && pnpm run format:check",
 		"prepack": "pnpm run check"
 	},

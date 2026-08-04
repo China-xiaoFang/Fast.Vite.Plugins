@@ -46,6 +46,7 @@ pnpm install --frozen-lockfile
 开发时常用命令：
 
 ```bash
+pnpm dev
 pnpm lint:fix
 pnpm format
 pnpm test
