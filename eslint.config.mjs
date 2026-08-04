@@ -10,37 +10,68 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-	// 忽略依赖、构建结果、压缩文件、锁文件和测试夹具；普通源码与文档仍参与检查。
+	// 忽略依赖、构建结果、缓存、生成文件和包管理器锁文件。
 	globalIgnores(
 		[
 			"**/node_modules/**",
-			"**/{build,coverage,dist,output,temp,tmp}/**",
-			"**/{.cache,.nitro,.nuxt,.output,.vercel}/**",
-			"**/{.vite-inspect,.vitepress/cache}/**",
+			"**/{dist,build,coverage,output,temp,tmp}/**",
+			"**/{.cache,.nuxt,.output,.vercel,.nitro}/**",
+			"**/{.vitepress/cache,.vite-inspect}/**",
 			"**/__snapshots__/**",
 			"**/*.min.*",
 			"**/auto-import?(s).d.ts",
 			"**/components.d.ts",
-			"**/{bun,deno,yarn}.lock",
-			"**/bun.lockb",
 			"**/package-lock.json",
+			"**/yarn.lock",
 			"**/pnpm-lock.yaml",
-			"tests/fixtures/**/*.vue",
-			"tests/fixtures/**/*.svg",
+			"**/bun.lock",
+			"**/bun.lockb",
+			"**/deno.lock",
 		],
-		"fast-vite-plugins/ignores"
+		"fast-vite-plugins/ignores/global"
 	),
-	// 读取仓库根目录的 .gitignore，避免 ESLint 检查未纳入版本控制的文件。
+	// 项目测试夹具由对应工具解析，不交给通用 ESLint 配置处理。
+	globalIgnores(["tests/fixtures/**/*.vue", "tests/fixtures/**/*.svg"], "fast-vite-plugins/ignores"),
+	// 读取项目 `.gitignore`，补充仓库自己的忽略范围。
 	{
-		name: "fast-vite-plugins/gitignore",
+		name: "fast-vite-plugins/ignores/git",
 		...eslintConfigFlatGitignore({ strict: false }),
 	},
-	// 跨 JavaScript 与 TypeScript 生效的基础规则。
+	// Node.js 项目的 JavaScript 与 TypeScript 文件使用 Node.js 全局变量。
+	{
+		name: "fast-vite-plugins/globals/node",
+		files: ["**/*.{js,cjs,mjs,jsx}", "**/*.{ts,cts,mts,tsx}"],
+		languageOptions: {
+			globals: globals.node,
+		},
+	},
+	// 配置、脚本、测试与 CLI 等工程文件允许使用 console。
+	{
+		name: "fast-vite-plugins/globals/node-tooling",
+		files: [
+			["**/*.{config,setup}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "**/*.{js,cjs,mjs,jsx}"],
+			["**/*.{config,setup}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "**/*.{ts,cts,mts,tsx}"],
+			["**/{scripts,bin}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "**/*.{js,cjs,mjs,jsx}"],
+			["**/{scripts,bin}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "**/*.{ts,cts,mts,tsx}"],
+			["**/{test,tests}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "**/*.{js,cjs,mjs,jsx}"],
+			["**/{test,tests}/**/*.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "**/*.{ts,cts,mts,tsx}"],
+			["**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "**/*.{js,cjs,mjs,jsx}"],
+			["**/*.{test,spec}.{js,cjs,mjs,jsx,ts,cts,mts,tsx}", "**/*.{ts,cts,mts,tsx}"],
+			["**/cli.{js,cjs,mjs,ts,cts,mts}", "**/*.{js,cjs,mjs,jsx}"],
+			["**/cli.{js,cjs,mjs,ts,cts,mts}", "**/*.{ts,cts,mts,tsx}"],
+		],
+		languageOptions: {
+			globals: globals.node,
+		},
+		rules: {
+			"no-console": "off",
+		},
+	},
+	// 跨 JavaScript、TypeScript 与 Vue 脚本生效的公共规则。
 	{
 		name: "fast-vite-plugins/common",
-		files: ["**/*.{cjs,js,mjs}", "**/*.ts"],
+		files: ["**/*.{js,cjs,mjs,jsx}", "**/*.{ts,cts,mts,tsx}"],
 		linterOptions: {
-			// 无效的 eslint-disable 注释通常表示规则已经变化，应及时清理。
 			reportUnusedDisableDirectives: "error",
 		},
 		rules: {
@@ -67,6 +98,7 @@ export default defineConfig(
 			"prefer-exponentiation-operator": "error",
 			// 使用 Object.hasOwn，避免对象覆盖或缺少 hasOwnProperty 时产生异常。
 			"prefer-object-has-own": "error",
+
 			// [可自动修复] 声明间顺序交给 import-x；这里只排序同一 import 的成员。
 			"sort-imports": [
 				"warn",
@@ -80,14 +112,19 @@ export default defineConfig(
 			],
 		},
 	},
-	// @eslint/js 提供 JavaScript 基础正确性规则；本段只补充有明确维护理由的规则。
+	// JavaScript 本地覆写规则。
 	{
 		name: "fast-vite-plugins/javascript",
-		files: ["**/*.{cjs,js,mjs}"],
+		files: ["**/*.{js,cjs,mjs,jsx}"],
 		extends: [eslintJs.configs.recommended],
 		languageOptions: {
 			ecmaVersion: "latest",
-			sourceType: "module",
+			parserOptions: {
+				ecmaFeatures: {
+					// 普通 `.jsx` 文件需要显式开启 JSX 语法解析。
+					jsx: true,
+				},
+			},
 		},
 		rules: {
 			// 控制台调用在应用源码中需要人工确认；warn/error 仍可用于必要的诊断输出。
@@ -110,8 +147,13 @@ export default defineConfig(
 			"no-restricted-syntax": ["error", "LabeledStatement"],
 			// [高影响][可自动修复] 使用 let/const 替代 var；首次启用需复核循环闭包和声明提升行为。
 			"no-var": "error",
-			// 禁止无说明的空代码块，空 catch 也必须通过注释或实际处理明确意图。
-			"no-empty": "error",
+			// 禁止无说明的空代码块；允许用于“忽略失败”语义的空 catch。
+			"no-empty": [
+				"error",
+				{
+					allowEmptyCatch: true,
+				},
+			],
 			// 拒绝肉眼难以识别、可能导致解析差异的非常规空白字符。
 			"no-irregular-whitespace": "error",
 			// 变量和类先声明后使用；函数声明允许提升。warn 保留函数式组合和循环依赖重构空间。
@@ -162,34 +204,21 @@ export default defineConfig(
 			"no-redeclare": "error",
 		},
 	},
+	// TypeScript 本地覆写规则。
 	{
-		name: "fast-vite-plugins/commonjs",
-		files: ["**/*.cjs"],
-		languageOptions: { sourceType: "commonjs" },
-	},
-	{
-		name: "fast-vite-plugins/node-javascript",
-		files: ["*.{js,mjs}", "scripts/**/*.{js,mjs}", "tests/**/*.{cjs,mjs}"],
-		languageOptions: { globals: globals.node },
-	},
-	// TypeScript 使用类型感知的 recommended 与 stylistic 预置。
-	{
-		name: "fast-vite-plugins/typescript",
-		files: ["**/*.ts"],
+		name: "fast-vite-plugins/typescript/type-checked",
+		files: ["**/*.{ts,cts,mts,tsx}"],
 		extends: [...tseslint.configs.recommendedTypeChecked, ...tseslint.configs.stylisticTypeChecked],
 		languageOptions: {
 			ecmaVersion: "latest",
-			globals: globals.node,
 			parserOptions: {
-				// Project Service 读取 tsconfig，为需要完整类型信息的规则提供语义数据。
 				projectService: true,
-				tsconfigRootDir: import.meta.dirname,
 			},
 		},
 		rules: {
 			// 使用 TypeScript 版本避免核心规则误判声明合并、类型和值的同名声明。
 			"@typescript-eslint/no-redeclare": "error",
-			// 未使用符号视为错误；以下划线开头表示参数或变量被有意忽略。
+			// [高影响][可自动修复] 未使用符号视为错误；以下划线开头可显式表示参数或变量被有意忽略。
 			"@typescript-eslint/no-unused-vars": [
 				"error",
 				{
@@ -201,21 +230,27 @@ export default defineConfig(
 					varsIgnorePattern: "^_",
 				},
 			],
-			// 声明文件、全局扩展和部分 SDK 仍需要 namespace。
+			// [默认关闭] 声明文件、全局扩展和部分 SDK 仍需要 namespace。
 			"@typescript-eslint/no-namespace": "off",
-			// any 会绕过类型检查，但在第三方边界中有合理用途，因此只警告。
+			// any 会绕过类型检查，但在第三方边界和渐进式类型完善中有合理用途，因此只警告。
 			"@typescript-eslint/no-explicit-any": "warn",
-			// 默认要求 ESM import；工具链互操作代码需要时可按文件关闭。
+			// [高影响] 默认要求 ESM import；CommonJS、动态加载或工具链互操作代码可能需要按文件关闭。
 			"@typescript-eslint/no-require-imports": "error",
-			// 允许常见的短路和三元表达式调用模式。
-			"@typescript-eslint/no-unused-expressions": ["error", { allowShortCircuit: true, allowTernary: true }],
-			// 删除可由 TypeScript 明确推断的原始值类型标注，减少重复信息。
+			// 使用 TS 版本识别类型断言等语法；允许常见的短路和三元表达式调用模式。
+			"@typescript-eslint/no-unused-expressions": [
+				"error",
+				{
+					allowShortCircuit: true,
+					allowTernary: true,
+				},
+			],
+			// [可自动修复] 删除可由 TypeScript 明确推断的原始值类型标注，减少重复信息。
 			"@typescript-eslint/no-inferrable-types": "error",
-			// 非空断言可能隐藏空值缺陷，以警告提示逐步消除。
+			// 非空断言可能隐藏空值缺陷；以警告提示逐步消除，避免一次性产生大量阻断错误。
 			"@typescript-eslint/no-non-null-assertion": "warn",
 			// 可选链之后再做非空断言逻辑矛盾，通常表示边界条件设计有误。
 			"@typescript-eslint/no-non-null-asserted-optional-chain": "error",
-			// 类型依赖改用内联 type import；需复核仅靠 import 触发的模块副作用。
+			// [高影响][可自动修复] 类型依赖改用内联 type import；需复核仅靠 import 触发的模块副作用。
 			"@typescript-eslint/consistent-type-imports": [
 				"error",
 				{
@@ -226,67 +261,89 @@ export default defineConfig(
 			],
 		},
 	},
-	// import-x 负责模块导入正确性、分组和排序，不猜测项目别名解析器。
+	// 默认启用的模块导入正确性与排序规则。
 	{
-		name: "fast-vite-plugins/imports",
-		files: ["**/*.{cjs,js,mjs}", "**/*.ts"],
+		name: "fast-vite-plugins/import",
+		files: ["**/*.{js,cjs,mjs,jsx}", "**/*.{ts,cts,mts,tsx}"],
 		extends: [eslintPluginImportX.flatConfigs.recommended],
 		rules: {
 			// import 必须位于其他语句之前，避免模块依赖散落在执行逻辑中。
 			"import-x/first": "error",
 			// 合并同一模块的重复 import，避免绑定分散或副作用被误读。
 			"import-x/no-duplicates": "error",
-			// 按来源分组并排序；带副作用的裸 import 仅报告，移动前必须确认执行顺序。
+			// [高影响][可自动修复] 按来源分组并排序；带副作用的裸 import 仅报告，人工移动前必须确认执行顺序。
 			"import-x/order": [
 				"error",
 				{
 					groups: [
-						"builtin", // Node.js 内置模块
-						"external", // 第三方依赖
-						"internal", // 项目内部别名模块
-						"parent", // 父级目录模块
-						"sibling", // 同级目录模块
-						"index", // 当前目录入口模块
-						"object", // TypeScript import = require() 导入
-						"type", // TypeScript 类型导入
-						"unknown", // 无法识别分类的导入
+						// Node.js 内置模块
+						"builtin",
+						// 第三方依赖
+						"external",
+						// 项目内部别名模块
+						"internal",
+						// 父级目录模块
+						"parent",
+						// 同级目录模块
+						"sibling",
+						// 当前目录入口模块
+						"index",
+						// TypeScript import = require() 导入
+						"object",
+						// TypeScript 类型导入
+						"type",
+						// 无法识别分类的导入
+						"unknown",
 					],
+					// 不同 import 分组之间必须保留一个空行
 					"newlines-between": "always",
-					alphabetize: { caseInsensitive: true, order: "asc" },
+					// 同一分组内按照模块路径字母升序排列
+					alphabetize: {
+						order: "asc",
+						caseInsensitive: true,
+					},
+					// 对没有赋值给变量的副作用导入进行排序检查
 					warnOnUnassignedImports: true,
 				},
 			],
-			// Vite/TypeScript 别名由项目编译器校验，避免共享配置绑定特定 resolver。
+			// [默认关闭] Vite/TypeScript 别名由项目解析器校验，避免共享配置绑定特定 resolver。
 			"import-x/no-unresolved": "off",
-			// 未配置 resolver 时，下列导出分析规则容易产生误报。
+			// [默认关闭] 未配置 resolver 时，namespace 导出的静态分析容易产生误报。
 			"import-x/namespace": "off",
+			// [默认关闭] 未配置 resolver 时，默认导出的静态分析容易产生误报。
 			"import-x/default": "off",
-			"import-x/named": "off",
-			// 不限制默认导出与相近命名导出的项目 API 风格。
+			// [默认关闭] 不限制同时存在默认导出与相近命名导出的模块 API 风格。
 			"import-x/no-named-as-default": "off",
+			// [默认关闭] 不限制通过默认导入对象访问同名属性的项目 API 风格。
 			"import-x/no-named-as-default-member": "off",
+			// [默认关闭] 未配置 resolver 时，命名导出的静态分析容易产生误报。
+			"import-x/named": "off",
 		},
 	},
-	// 检查无效、冗余或容易产生回溯问题的正则表达式。
+	// 创建正则表达式正确性配置。
 	{
 		name: "fast-vite-plugins/regexp",
-		files: ["**/*.{cjs,js,mjs}", "**/*.ts"],
+		files: ["**/*.{js,cjs,mjs,jsx}", "**/*.{ts,cts,mts,tsx}"],
 		extends: [eslintPluginRegexp.configs["flat/recommended"]],
 	},
-	// 严格 JSON 使用官方推荐规则。
+	// 创建 JSON、JSONC 与 JSON5 配置。
 	{
-		name: "fast-vite-plugins/json",
+		name: "fast-vite-plugins/json/json",
 		files: ["**/*.json"],
 		extends: [eslintPluginJsonc.configs["flat/recommended-with-json"]],
 	},
-	// tsconfig 与 VS Code 设置实际使用 JSONC，应用完整推荐预置，避免严格 JSON 规则错误覆盖。
 	{
-		name: "fast-vite-plugins/jsonc",
-		files: ["**/tsconfig.json", "**/tsconfig.*.json", "**/.vscode/settings.json"],
+		name: "fast-vite-plugins/json/jsonc",
+		files: ["**/*.jsonc"],
 		extends: [eslintPluginJsonc.configs["flat/recommended-with-jsonc"]],
 	},
 	{
-		name: "fast-vite-plugins/vscode-jsonc",
+		name: "fast-vite-plugins/json/json5",
+		files: ["**/*.json5"],
+		extends: [eslintPluginJsonc.configs["flat/recommended-with-json5"]],
+	},
+	{
+		name: "fast-vite-plugins/json/vscode-settings",
 		files: ["**/.vscode/settings.json"],
 		rules: {
 			// VS Code 的 settings.json 使用带注释的 JSONC 方言。
@@ -294,10 +351,10 @@ export default defineConfig(
 		},
 	},
 	{
-		name: "fast-vite-plugins/package-json",
+		name: "fast-vite-plugins/sort/package-json",
 		files: ["**/package.json"],
 		rules: {
-			// [高影响][可自动修复] npm 的 files 清单按字母排序；数组顺序不改打包集合，但首次 diff 较大。
+			// [高影响][可自动修复][按需启用] npm 的 files 清单按字母排序；数组顺序不改打包集合，但首次 diff 较大。
 			"jsonc/sort-array-values": [
 				"error",
 				{
@@ -305,7 +362,7 @@ export default defineConfig(
 					pathPattern: "^files$",
 				},
 			],
-			// [高影响][可自动修复] 仅排序明确安全的 package.json 区域，不进入 exports 条件对象。
+			// [高影响][可自动修复][按需启用] 仅排序明确安全的 package.json 区域，不进入 exports 条件对象。
 			"jsonc/sort-keys": [
 				"error",
 				// 根字段按常见阅读顺序组织，减少不同项目之间的清单噪声。
@@ -370,12 +427,13 @@ export default defineConfig(
 		},
 	},
 	{
-		name: "fast-vite-plugins/tsconfig",
+		name: "fast-vite-plugins/sort/tsconfig",
 		files: ["**/tsconfig.json", "**/tsconfig.*.json"],
 		rules: {
 			// tsconfig 是 JSONC，注释用于解释不直观的编译器取舍，必须保留。
 			"jsonc/no-comments": "off",
-			// [高影响][可自动修复] 只调整顶层和 compilerOptions 的键顺序，不改写任何选项值或数组。
+
+			// [高影响][可自动修复][按需启用] 只调整顶层和 compilerOptions 的键顺序，不改写任何选项值或数组。
 			"jsonc/sort-keys": [
 				"error",
 				// 顶层按继承、选项、项目引用和文件范围的阅读顺序排列。
@@ -489,7 +547,7 @@ export default defineConfig(
 			],
 		},
 	},
-	// 检查 Markdown 文档结构；代码块由各语言配置单独负责。
+	// 创建 Markdown 结构与语法检查配置。
 	{
 		name: "fast-vite-plugins/markdown",
 		files: ["**/*.md"],
@@ -501,7 +559,7 @@ export default defineConfig(
 		files: ["tests/fixtures/integration/**/*.js"],
 		languageOptions: { globals: globals.browser },
 	},
-	// 最后关闭与 Prettier 冲突的格式规则；ESLint 本身不会执行 Prettier。
+	// 创建 Prettier 兼容层。
 	{
 		...eslintConfigPrettier,
 		name: "fast-vite-plugins/prettier",
