@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.0.3 - 2026-08-08
+
+- Added consistent `fast` and `fast-china` package keywords and completed the npm publish allowlist with contribution guidance.
+- Removed `src` and declaration maps that referenced unpublished source files while retaining self-contained runtime source maps.
+- Focused package-contract checks on public exports, ESM loading, publish contents, and runtime source-map integrity.
+
 ## 2.0.2 - 2026-08-04
 
 - Standardize the bilingual README, repository ignores, editor recommendations, TypeScript configuration, and development workflow with the other Fast frontend SDK repositories.

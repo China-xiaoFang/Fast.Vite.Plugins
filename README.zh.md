@@ -174,6 +174,7 @@ devRestart({
 - [完整 API 参考](./docs/API.zh-CN.md)
 - [风险指南](./docs/RISKS.zh-CN.md)
 - [拉取、开发、发布与部署](./docs/DEVELOPMENT_RELEASE_DEPLOY.zh-CN.md)
+- [贡献指南](./CONTRIBUTING.md)
 - [工程质量审查](./docs/ENGINEERING_REVIEW.zh-CN.md)
 - [更新日志](./CHANGELOG.md)
 - [安全策略](./SECURITY.md)
