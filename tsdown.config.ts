@@ -13,8 +13,8 @@ export default defineConfig({
 	target: "node22",
 	// 固定生成 .mjs 和 .d.mts，与 package.json exports 的公开路径保持一致。
 	fixedExtension: true,
-	// 生成 TypeScript 声明及其映射，使编辑器可以从发布类型定位源码。
-	dts: { sourcemap: true },
+	// 生成类型声明，不生成会指向未发布 src 的声明 Source Map。
+	dts: true,
 	// 生成 JavaScript source map，支持构建期异常定位到插件源码。
 	sourcemap: true,
 	// 每次构建前清空完整 dist，避免入口删除或重命名后残留陈旧产物。

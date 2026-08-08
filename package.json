@@ -1,10 +1,11 @@
 {
 	"name": "fast-vite-plugins",
-	"version": "2.0.2",
+	"version": "2.0.3",
 	"description": "Production-grade, typed and composable Vite plugins for modern Web applications.",
 	"type": "module",
 	"keywords": [
 		"fast",
+		"fast-china",
 		"vite",
 		"vite-plugin"
 	],
@@ -20,14 +21,14 @@
 	"author": "小方",
 	"files": [
 		"CHANGELOG.md",
+		"CONTRIBUTING.md",
 		"Fast.png",
 		"LICENSE",
 		"README.md",
 		"README.zh.md",
 		"SECURITY.md",
 		"dist",
-		"docs",
-		"src"
+		"docs"
 	],
 	"main": "./dist/index.mjs",
 	"module": "./dist/index.mjs",

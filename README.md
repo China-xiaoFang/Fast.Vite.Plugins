@@ -170,6 +170,7 @@ Use `devRestart()` for configuration inputs outside Vite's module graph. Vite al
 - [Complete API reference](./docs/API.md)
 - [Risk guide](./docs/RISKS.md)
 - [Development, release, and deployment guide (Chinese)](./docs/DEVELOPMENT_RELEASE_DEPLOY.zh-CN.md)
+- [Contributing guide](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
 - [Security policy](./SECURITY.md)
 

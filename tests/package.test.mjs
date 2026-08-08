@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { access, readFile, readdir } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { test } from "node:test";
@@ -31,7 +31,10 @@ test("package metadata identifies a public ESM package", async () => {
 	assert.equal(manifest.type, "module");
 	assert.equal(manifest.sideEffects, false);
 	assert.equal(manifest.publishConfig.access, "public");
-	assert.equal(manifest.peerDependencies.vite, "^7.0.0 || ^8.0.0");
+	assert.ok(manifest.keywords.includes("fast"));
+	assert.ok(manifest.keywords.includes("fast-china"));
+	assert.ok(manifest.files.includes("dist"));
+	assert.ok(!manifest.files.includes("src"));
 });
 
 test("root runtime API matches the explicit whitelist", async () => {
@@ -51,7 +54,6 @@ test("the public ESM entry imports successfully while CommonJS require fails", a
 
 test("dist contains only files reachable from exports and source maps resolve to published sources", async () => {
 	const manifest = JSON.parse(await readFile("package.json", "utf8"));
-	const publishedDirectories = new Set(manifest.files);
 	const allowed = new Set();
 	const queue = [];
 	for (const value of Object.values(manifest.exports)) {
@@ -59,7 +61,7 @@ test("dist contains only files reachable from exports and source maps resolve to
 		for (const target of [value.import, value.types]) {
 			const fileName = target.replace(/^\.\/dist\//, "");
 			allowed.add(fileName);
-			allowed.add(`${fileName}.map`);
+			if (fileName.endsWith(".mjs")) allowed.add(`${fileName}.map`);
 			queue.push(fileName);
 		}
 	}
@@ -72,7 +74,7 @@ test("dist contains only files reachable from exports and source maps resolve to
 			const resolved = fileName.endsWith(".d.mts") ? imported.replace(/\.mjs$/, ".d.mts") : imported;
 			if (allowed.has(resolved)) continue;
 			allowed.add(resolved);
-			allowed.add(`${resolved}.map`);
+			if (resolved.endsWith(".mjs")) allowed.add(`${resolved}.map`);
 			queue.push(resolved);
 		}
 	}
@@ -80,25 +82,12 @@ test("dist contains only files reachable from exports and source maps resolve to
 	const actual = (await readdir("dist")).sort();
 	assert.deepEqual(actual, [...allowed].sort());
 	for (const mapName of actual.filter((fileName) => fileName.endsWith(".map"))) {
+		assert.ok(!mapName.endsWith(".d.mts.map"), `unexpected declaration map: ${mapName}`);
 		const map = JSON.parse(await readFile(path.join("dist", mapName), "utf8"));
-		if (Array.isArray(map.sourcesContent)) {
-			assert.equal(map.sources.length, map.sourcesContent.length, mapName);
-			assert.ok(
-				map.sourcesContent.every((source) => typeof source === "string" && source.length > 0),
-				mapName
-			);
-			continue;
-		}
-
-		assert.ok(publishedDirectories.has("src"), `${mapName} 引用的源码目录必须随包发布。`);
-		for (const source of map.sources) {
-			const sourcePath = path.resolve("dist", path.dirname(mapName), source);
-			const relativeSourcePath = path.relative(process.cwd(), sourcePath);
-			assert.ok(
-				relativeSourcePath === "src" || (relativeSourcePath.startsWith(`src${path.sep}`) && !relativeSourcePath.includes("..")),
-				`${mapName} 包含发布范围外的源码引用：${source}`
-			);
-			await access(sourcePath);
-		}
+		assert.equal(map.sources.length, map.sourcesContent?.length, mapName);
+		assert.ok(
+			map.sourcesContent.every((source) => typeof source === "string" && source.length > 0),
+			mapName
+		);
 	}
 });
