@@ -1,9 +1,7 @@
 import { stat } from "node:fs/promises";
 import path from "node:path";
-
 import { errorMessage } from "../shared/fileSystem";
 import { createDebouncedTask, onServerClose } from "../shared/plugin";
-
 import type { DevRestartContext, DevRestartEvent, DevRestartPluginOptions, ResolvedRestartPath } from "./type";
 import type { Plugin } from "vite";
 

@@ -1,9 +1,7 @@
 import { constants } from "node:fs";
 import { access, copyFile, cp, lstat, mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
-
 import { isPathInside, isSafeOutputFileName } from "../shared/fileSystem";
-
 import type { StaticCopyPluginOptions, StaticCopyTarget } from "./type";
 import type { Plugin, ResolvedConfig } from "vite";
 

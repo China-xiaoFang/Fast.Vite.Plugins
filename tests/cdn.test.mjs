@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-
 import { cdnImport, cdnJsDelivrUrl, cdnUnpkgUrl } from "../dist/index.mjs";
 
 const environment = { command: "build", mode: "production" };

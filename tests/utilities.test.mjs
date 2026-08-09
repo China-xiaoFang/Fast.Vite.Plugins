@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { brotliDecompressSync, gunzipSync } from "node:zlib";
-
 import { buildInfo, compression, envGuard, htmlTemplate, virtualModules } from "../dist/index.mjs";
 
 test("build information is deterministic with an injected clock", async () => {

@@ -1,6 +1,5 @@
 import ExternalLibrary, { answer } from "external-library";
 import config from "virtual:test-config";
-
 import "./style.css";
 
 const compressibleText = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";

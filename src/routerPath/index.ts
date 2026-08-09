@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-
 import {
 	errorMessage,
 	hasExtension,
@@ -13,7 +12,6 @@ import {
 } from "../shared/fileSystem";
 import { compareStrings, toPascalCase } from "../shared/naming";
 import { createDebouncedTask, onServerClose } from "../shared/plugin";
-
 import type { RouterMetaContext, RouterMetaMap, RouterMetaPluginOptions } from "./type";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 

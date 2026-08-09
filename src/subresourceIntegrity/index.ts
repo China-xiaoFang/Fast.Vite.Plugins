@@ -1,10 +1,8 @@
 import { createHash } from "node:crypto";
 import path from "node:path";
-
 import { isSafeOutputFileName, normalizePath } from "../shared/fileSystem";
 import { compareStrings } from "../shared/naming";
 import { assertPostBuildPluginOrder } from "../shared/order";
-
 import type {
 	IntegrityInjectionOptions,
 	IntegrityInjectionResult,

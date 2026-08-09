@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
-
 import { build } from "vite";
-
 import { buildInfo, cdnImport, compression, htmlTemplate, staticCopy, subresourceIntegrity, virtualModules } from "../dist/index.mjs";
 
 test("plugins cooperate in a real Vite build", async () => {

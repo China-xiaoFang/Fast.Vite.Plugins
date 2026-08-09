@@ -2,9 +2,7 @@ import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import path from "node:path";
 import { test } from "node:test";
-
 import { build } from "vite";
-
 import { bundleBudget, compression, devRestart, subresourceIntegrity } from "../dist/index.mjs";
 
 test("bundle budget reports per-file, total and missing-match failures", async () => {
