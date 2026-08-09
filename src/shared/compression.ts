@@ -1,6 +1,5 @@
 import { promisify } from "node:util";
 import { brotliCompress, gzip } from "node:zlib";
-
 import type { CompressionAlgorithm, CompressionPluginOptions } from "../compression/type";
 
 const gzipAsync = promisify(gzip);

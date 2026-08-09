@@ -1,8 +1,6 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-
 import { isValidIdentifier } from "../shared/naming";
-
 import type { CdnImportPluginOptions, CdnModule, CdnModuleResolver, CdnModuleResolverContext, ResolvedCdnModule } from "./type";
 import type { ConfigEnv, HtmlTagDescriptor, Plugin, ResolvedConfig } from "vite";
 

@@ -15,7 +15,6 @@ import {
 	svgIcons,
 	virtualModules,
 } from "fast-vite-plugins";
-
 import type {
 	BuildInfoPluginOptions,
 	BundleBudgetPluginOptions,

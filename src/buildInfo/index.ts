@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-
 import type { BuildInfoContext, BuildInfoPluginOptions, BuildInformation } from "./type";
 import type { ConfigEnv, Plugin, ResolvedConfig } from "vite";
 

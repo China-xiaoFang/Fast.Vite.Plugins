@@ -1,6 +1,5 @@
 import { lstat, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import path from "node:path";
-
 import { compareStrings } from "./naming";
 
 /**

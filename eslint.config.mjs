@@ -295,8 +295,25 @@ export default defineConfig(
 						// 无法识别分类的导入
 						"unknown",
 					],
-					// 不同 import 分组之间必须保留一个空行
-					"newlines-between": "always",
+					// 常用平台、框架和工具依赖优先于其他第三方依赖，并按声明顺序分层排序
+					pathGroups: [
+						// uni-app 平台生态
+						{ pattern: "@dcloudio/**", group: "external", position: "before" },
+						// Vue 核心、路由、状态管理和 VueUse 生态
+						{ pattern: "{vue,@vue/**,vue-router,pinia,@pinia/**,@vueuse/**}", group: "external", position: "before" },
+						// Element Plus 生态及其子路径
+						{ pattern: "{element-plus,element-plus/**,@element-plus/**}", group: "external", position: "before" },
+						// Fast Element Plus 生态及其子路径
+						{ pattern: "{fast-element-plus,fast-element-plus/**,@fast-element-plus/**}", group: "external", position: "before" },
+						// Fast China 组织包及其子路径
+						{ pattern: "@fast-china/**", group: "external", position: "before" },
+						// Lodash、lodash-es、lodash-unified 及其子路径
+						{ pattern: "lodash{,-es,-unified}{,/**}", group: "external", position: "before" },
+					],
+					// 类型导入不参与 pathGroups 匹配，始终保留在 type 分组
+					pathGroupsExcludedImportTypes: ["type"],
+					// 所有 import 分组连续排列，不保留空行
+					"newlines-between": "never",
 					// 同一分组内按照模块路径字母升序排列
 					alphabetize: {
 						order: "asc",

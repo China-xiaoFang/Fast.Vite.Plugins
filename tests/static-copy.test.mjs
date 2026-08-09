@@ -3,7 +3,6 @@ import { mkdir, mkdtemp, readFile, rmdir, unlink, writeFile } from "node:fs/prom
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-
 import { staticCopy } from "../dist/index.mjs";
 
 test("static copy transforms files and blocks destinations outside outDir", async () => {

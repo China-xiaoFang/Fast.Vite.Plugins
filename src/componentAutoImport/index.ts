@@ -1,5 +1,4 @@
 import path from "node:path";
-
 import {
 	errorMessage,
 	hasExtension,
@@ -13,7 +12,6 @@ import {
 } from "../shared/fileSystem";
 import { compareStrings, isValidBindingIdentifier, toPascalCase } from "../shared/naming";
 import { createDebouncedTask, onServerClose } from "../shared/plugin";
-
 import type { ComponentNameContext, ComponentRegistryPluginOptions, ScannedComponent } from "./type";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 

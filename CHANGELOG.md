@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 2.0.4 - 2026-08-09
+
+- Added prioritized import path groups for the uni-app, Vue, Element Plus, Fast Element Plus, Fast China, and Lodash ecosystems while keeping type-only imports in the dedicated type group.
+- Changed import group spacing to a compact no-blank-line style and normalized the repository imports to the new policy.
+
 ## 2.0.3 - 2026-08-08
 
 - Added consistent `fast` and `fast-china` package keywords and completed the npm publish allowlist with contribution guidance.

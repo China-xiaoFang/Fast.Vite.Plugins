@@ -4,7 +4,6 @@ import { mkdir, mkdtemp, readFile, rmdir, unlink, writeFile } from "node:fs/prom
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
-
 import { componentRegistry, routerMeta, svgIcons } from "../dist/index.mjs";
 
 const workspaceRoot = process.cwd();

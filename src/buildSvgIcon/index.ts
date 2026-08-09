@@ -1,10 +1,8 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-
 import { errorMessage, isPathInside, normalizePath, resolvePathInside, scanFiles, writeFileIfChanged } from "../shared/fileSystem";
 import { compareStrings, isValidBindingIdentifier, toPascalCase } from "../shared/naming";
 import { createDebouncedTask, onServerClose } from "../shared/plugin";
-
 import type { ParsedSvg, ScannedSvgIcon, SvgAttributeValue, SvgIconNameContext, SvgIconsPluginOptions } from "./type";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 
