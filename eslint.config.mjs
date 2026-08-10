@@ -259,6 +259,13 @@ export default defineConfig(
 					prefer: "type-imports",
 				},
 			],
+			// 允许透明转发外部 Promise 的未知拒绝原因；静态可知的 string、number 等仍会被报告。
+			"@typescript-eslint/prefer-promise-reject-errors": [
+				"error",
+				{
+					allowThrowingUnknown: true,
+				},
+			],
 		},
 	},
 	// 默认启用的模块导入正确性与排序规则。
