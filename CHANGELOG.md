@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 2.0.5 - 2026-08-16
+
+- Aligned the component registry, router metadata, and SVG icon source directories with their published plugin API names without changing the public API.
+
 ## 2.0.4 - 2026-08-09
 
 - Added prioritized import path groups for the uni-app, Vue, Element Plus, Fast Element Plus, Fast China, and Lodash ecosystems while keeping type-only imports in the dedicated type group.
