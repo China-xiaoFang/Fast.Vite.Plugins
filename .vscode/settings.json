@@ -1,19 +1,37 @@
 {
-	"editor.tabSize": 2,
+	// 增强括号层级辨识，并只突出当前活动括号对。
+	"editor.bracketPairColorization.enabled": true,
 	"editor.codeActionsOnSave": {
 		"source.fixAll.eslint": "explicit"
 	},
-	"eslint.validate": ["javascript", "typescript", "typescriptreact", "vue"],
-	"[vue]": {
+	// 与 .prettierrc.cjs 的制表符和行宽保持一致，关闭自动猜测缩进。
+	"editor.detectIndentation": false,
+	"editor.formatOnSave": true,
+	"editor.guides.bracketPairs": "active",
+	"editor.guides.bracketPairsHorizontal": "active",
+	"editor.insertSpaces": false,
+	"editor.linkedEditing": true,
+	// 在字符串中显示补全，支持 Vue 模板 class、路径和环境变量提示。
+	"editor.quickSuggestions": {
+		"comments": false,
+		"other": true,
+		"strings": true
+	},
+	"editor.renderWhitespace": "selection",
+	"editor.rulers": [150],
+	"editor.tabSize": 2,
+	"editor.trimAutoWhitespace": true,
+
+	"[css]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
-	"[typescriptreact]": {
+	"[html]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"[javascript]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
-	"[typescript]": {
+	"[javascriptreact]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
 	"[json]": {
@@ -22,24 +40,96 @@
 	"[jsonc]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
-	"[html]": {
+	"[less]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
-	"[css]": {
-		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	"[markdown]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode",
+		"files.trimTrailingWhitespace": false
 	},
 	"[scss]": {
 		"editor.defaultFormatter": "esbenp.prettier-vscode"
 	},
-	"testing.automaticallyOpenPeekView": "never",
-	"cSpell.words": ["subresource"],
-	"editor.fontSize": 14,
-	"prettier.endOfLine": "lf",
+	"[typescript]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
+	"[vue]": {
+		"editor.defaultFormatter": "esbenp.prettier-vscode"
+	},
 
-	// Enable file nesting
+	// 要求项目存在 Prettier 配置，避免使用扩展默认值产生不同格式。
+	"prettier.requireConfig": true,
+
+	// ESLint 只负责诊断和保存修复，文件格式化统一交给各语言的 Prettier 配置。
+	"eslint.format.enable": false,
+	"eslint.useFlatConfig": true,
+	"eslint.validate": ["javascript", "javascriptreact", "json", "jsonc", "markdown", "typescript", "typescriptreact", "vue"],
+
+	// 项目专用拼写词典。
+	"cSpell.words": [],
+
+	// 启用 VS Code 内置 CSS 语法校验。
+	"css.validate": true,
+	// 启用 HTML 标记的自动闭合
+	"html.autoClosingTags": true,
+	// 启用 VS Code 内置 LESS 语法校验。
+	"less.validate": true,
+	// 启用 VS Code 内置 SCSS 语法校验。
+	"scss.validate": true,
+	// 在 Vue 模板中提示缺失的必填 Props。
+	"vue.inlayHints.missingProps": true,
+
+	// 在 Vue 模板中按 HTML 规则提供 Emmet 补全。
+	"emmet.includeLanguages": {
+		"vue": "html"
+	},
+	"emmet.showAbbreviationSuggestions": true,
+	"emmet.triggerExpansionOnTab": true,
+
+	// 自动导入优先使用 tsconfig.json 中定义的 @ 路径别名。
+	"js/ts.preferences.importModuleSpecifier": "non-relative",
+	// 自动导入纯类型符号时生成 import type，与 ESLint 规则保持一致。
+	"js/ts.preferences.preferTypeOnlyAutoImports": true,
+	"js/ts.suggest.autoImports": true,
+	// Vue Official 与 VS Code TypeScript 服务统一使用项目安装的 TypeScript 6。
+	"js/ts.tsdk.path": "node_modules/typescript/lib",
+	"js/ts.tsdk.promptToUseWorkspaceVersion": true,
+	// 文件移动后同步更新 TS、TSX、JS 和 JSX 中的导入路径。
+	"js/ts.updateImportsOnFileMove.enabled": "always",
+
+	// 将所有 Vite 环境配置识别为 dotenv 文件。
+	"files.associations": {
+		".env*": "dotenv"
+	},
+	"files.eol": "\n",
+	"files.insertFinalNewline": true,
+	"files.trimFinalNewlines": true,
+	"files.trimTrailingWhitespace": true,
+	// 排除依赖、包管理器缓存和构建产物，减少文件监听开销。
+	"files.watcherExclude": {
+		"**/.pnpm-store/**": true,
+		"**/dist/**": true,
+		"**/node_modules/**": true
+	},
+
+	// 搜索时排除依赖、包管理器缓存、覆盖率和构建产物。
+	"search.exclude": {
+		"**/.pnpm-store/**": true,
+		"**/coverage/**": true,
+		"**/dist/**": true,
+		"**/node_modules/**": true
+	},
+
+	// 折叠同一工具或入口文件的附属配置，减少项目根目录噪声。
 	"explorer.fileNesting.enabled": true,
 	"explorer.fileNesting.patterns": {
+		".env": ".env.*",
+		".gitignore": ".gitattributes",
 		".prettierrc.cjs": ".prettierignore, eslint.config.mjs",
-		"package.json": ".nvmrc, pnpm-lock.yaml, pnpm-workspace.yaml"
+		"package.json": ".nvmrc, pnpm-lock.yaml, pnpm-workspace.yaml",
+		"tsconfig.json": "tsconfig.*.json"
 	}
 }
