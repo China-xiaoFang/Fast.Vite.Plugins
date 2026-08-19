@@ -193,7 +193,7 @@ function resolveOptions(options: SvgIconsPluginOptions): ResolvedOptions {
 	if (options.debounce !== undefined && (!Number.isFinite(options.debounce) || options.debounce < 0)) {
 		throw new Error("[fast-vite:svg-icons] debounce 必须是大于或等于 0 的有限数值。");
 	}
-	const output = options.output ?? "src/icons/index.generated.ts";
+	const output = options.output ?? "src/icons/index.ts";
 	if (!/\.[cm]?ts$/i.test(output)) {
 		throw new Error("[fast-vite:svg-icons] output 必须使用 TypeScript 输出扩展名 .ts、.mts 或 .cts。");
 	}

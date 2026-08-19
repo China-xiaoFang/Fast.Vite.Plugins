@@ -13,7 +13,7 @@ export default defineConfig(
 	// 忽略依赖、构建结果、缓存、生成文件和包管理器锁文件。
 	globalIgnores(
 		[
-			"**/node_modules/**",
+			"**/.pnpm-store,node_modules/**",
 			"**/{dist,build,coverage,output,temp,tmp}/**",
 			"**/{.cache,.nuxt,.output,.vercel,.nitro}/**",
 			"**/{.vitepress/cache,.vite-inspect}/**",

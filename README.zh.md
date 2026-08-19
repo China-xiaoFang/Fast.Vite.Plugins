@@ -95,8 +95,8 @@ export default defineConfig({
 ```ts
 componentRegistry({
 	dirs: ["src/components", "src/features"],
-	output: "src/components/index.generated.ts",
-	dts: "types/components.generated.d.ts",
+	output: "src/components/index.ts",
+	dts: "types/components.d.ts",
 	conflict: "error",
 });
 ```

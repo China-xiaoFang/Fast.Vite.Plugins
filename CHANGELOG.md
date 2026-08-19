@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 2.0.6 - 2026-08-19
+
+- Changed the default component registry outputs to `src/components/index.ts` and `types/components.d.ts`.
+- Changed the default SVG icon module output to `src/icons/index.ts`.
+
 ## 2.0.5 - 2026-08-16
 
 - Aligned the component registry, router metadata, and SVG icon source directories with their published plugin API names without changing the public API.
