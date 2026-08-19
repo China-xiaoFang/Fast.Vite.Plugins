@@ -33,7 +33,7 @@ export interface ScannedSvgIcon extends SvgIconNameContext {
 export interface SvgIconsPluginOptions {
 	/** SVG 源目录，相对于 Vite `root`。 @defaultValue `"src/assets/icons"` */
 	dir?: string;
-	/** 生成的单文件 Vue 图标模块，相对于 Vite `root`。 @defaultValue `"src/icons/index.generated.ts"` */
+	/** 生成的单文件 Vue 图标模块，相对于 Vite `root`。 @defaultValue `"src/icons/index.ts"` */
 	output?: string;
 	/** 是否递归扫描子目录。 @defaultValue `true` */
 	deep?: boolean;

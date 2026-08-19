@@ -1,6 +1,6 @@
 # API 参考
 
-本文档对应 `fast-vite-plugins@2.0.2`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
+本文档对应 `fast-vite-plugins@2.0.6`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
 
 ## 入口与异常契约
 
@@ -17,23 +17,23 @@
 ```ts
 componentRegistry({
 	dirs: ["src/components", "src/features"],
-	output: "src/components/index.generated.ts",
-	dts: "types/components.generated.d.ts",
+	output: "src/components/index.ts",
+	dts: "types/components.d.ts",
 	name: ({ defaultName, relativePath }) => (relativePath.startsWith("admin/") ? `Admin${defaultName}` : defaultName),
 });
 ```
 
-| 选项         | 类型                               | 默认值                                | 说明                   |
-| ------------ | ---------------------------------- | ------------------------------------- | ---------------------- |
-| `dirs`       | `string \| readonly string[]`      | `"src/components"`                    | 扫描目录               |
-| `output`     | `string \| false`                  | `"src/components/index.generated.ts"` | 组件入口；`false` 关闭 |
-| `dts`        | `string \| false`                  | `"types/components.generated.d.ts"`   | 全局类型；`false` 关闭 |
-| `deep`       | `boolean`                          | `true`                                | 是否递归扫描           |
-| `extensions` | `readonly string[]`                | `vue, tsx, jsx`                       | 可带或不带点号的扩展名 |
-| `include`    | `(context) => boolean`             | -                                     | 返回 `false` 排除文件  |
-| `name`       | `(context) => string`              | -                                     | 自定义组件名           |
-| `conflict`   | `"error" \| "warn" \| "overwrite"` | `"error"`                             | 重名策略               |
-| `debounce`   | `number`                           | `80`                                  | 开发监听防抖毫秒数     |
+| 选项         | 类型                               | 默认值                      | 说明                   |
+| ------------ | ---------------------------------- | --------------------------- | ---------------------- |
+| `dirs`       | `string \| readonly string[]`      | `"src/components"`          | 扫描目录               |
+| `output`     | `string \| false`                  | `"src/components/index.ts"` | 组件入口；`false` 关闭 |
+| `dts`        | `string \| false`                  | `"types/components.d.ts"`   | 全局类型；`false` 关闭 |
+| `deep`       | `boolean`                          | `true`                      | 是否递归扫描           |
+| `extensions` | `readonly string[]`                | `vue, tsx, jsx`             | 可带或不带点号的扩展名 |
+| `include`    | `(context) => boolean`             | -                           | 返回 `false` 排除文件  |
+| `name`       | `(context) => string`              | -                           | 自定义组件名           |
+| `conflict`   | `"error" \| "warn" \| "overwrite"` | `"error"`                   | 重名策略               |
+| `debounce`   | `number`                           | `80`                        | 开发监听防抖毫秒数     |
 
 `index.vue` 默认使用父目录名称。名称必须是唯一且合法的 ECMAScript 标识符。`output` 和 `dts` 不能同时关闭。
 
@@ -70,7 +70,7 @@ routerMeta({
 ```ts
 svgIcons({
 	dir: "src/assets/icons",
-	output: "src/icons/index.generated.ts",
+	output: "src/icons/index.ts",
 	componentPrefix: "App",
 	componentSuffix: "Icon",
 	removeDimensions: true,
@@ -78,17 +78,17 @@ svgIcons({
 });
 ```
 
-| 选项                | 默认值                           | 说明                            |
-| ------------------- | -------------------------------- | ------------------------------- |
-| `dir`               | `"src/assets/icons"`             | SVG 源目录                      |
-| `output`            | `"src/icons/index.generated.ts"` | 单文件输出                      |
-| `deep`              | `true`                           | 是否递归                        |
-| `componentPrefix`   | `""`                             | 组件名前缀                      |
-| `componentSuffix`   | `"Icon"`                         | 组件名后缀                      |
-| `include` / `name`  | -                                | 文件过滤器 / 命名器             |
-| `defaultAttributes` | `{}`                             | 默认根属性，源 SVG 同名属性优先 |
-| `removeDimensions`  | `false`                          | 删除 `width` / `height`         |
-| `debounce`          | `80`                             | 开发监听防抖毫秒数              |
+| 选项                | 默认值                 | 说明                            |
+| ------------------- | ---------------------- | ------------------------------- |
+| `dir`               | `"src/assets/icons"`   | SVG 源目录                      |
+| `output`            | `"src/icons/index.ts"` | 单文件输出                      |
+| `deep`              | `true`                 | 是否递归                        |
+| `componentPrefix`   | `""`                   | 组件名前缀                      |
+| `componentSuffix`   | `"Icon"`               | 组件名后缀                      |
+| `include` / `name`  | -                      | 文件过滤器 / 命名器             |
+| `defaultAttributes` | `{}`                   | 默认根属性，源 SVG 同名属性优先 |
+| `removeDimensions`  | `false`                | 删除 `width` / `height`         |
+| `debounce`          | `80`                   | 开发监听防抖毫秒数              |
 
 SVG 内部标记会通过 `innerHTML` 写入。不要把用户上传或其他不可信 SVG 放入扫描目录。
 

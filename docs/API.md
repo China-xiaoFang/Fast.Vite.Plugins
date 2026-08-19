@@ -1,6 +1,6 @@
 # API reference
 
-This document covers `fast-vite-plugins@2.0.2`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
+This document covers `fast-vite-plugins@2.0.6`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
 
 ## Entry points and errors
 
@@ -17,13 +17,13 @@ Scans Vue/TSX/JSX files and generates named exports, a read-only registry, `regi
 ```ts
 componentRegistry({
 	dirs: ["src/components", "src/features"],
-	output: "src/components/index.generated.ts",
-	dts: "types/components.generated.d.ts",
+	output: "src/components/index.ts",
+	dts: "types/components.d.ts",
 	conflict: "error",
 });
 ```
 
-Defaults: `dirs: "src/components"`, `output: "src/components/index.generated.ts"`, `dts: "types/components.generated.d.ts"`, recursive scanning, `vue/tsx/jsx`, conflict errors, and an 80 ms watcher debounce. `index.vue` uses its parent folder name. Names must be unique ECMAScript identifiers.
+Defaults: `dirs: "src/components"`, `output: "src/components/index.ts"`, `dts: "types/components.d.ts"`, recursive scanning, `vue/tsx/jsx`, conflict errors, and an 80 ms watcher debounce. `index.vue` uses its parent folder name. Names must be unique ECMAScript identifiers.
 
 ## `routerMeta(options?)`
 
@@ -38,7 +38,7 @@ Generates one Vue module from an SVG folder without requiring JSX support.
 ```ts
 svgIcons({
 	dir: "src/assets/icons",
-	output: "src/icons/index.generated.ts",
+	output: "src/icons/index.ts",
 	componentSuffix: "Icon",
 	removeDimensions: true,
 });

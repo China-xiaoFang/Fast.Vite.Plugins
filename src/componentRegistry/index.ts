@@ -222,8 +222,8 @@ function resolveOptions(options: ComponentRegistryPluginOptions): ResolvedOption
 	if (options.debounce !== undefined && (!Number.isFinite(options.debounce) || options.debounce < 0)) {
 		throw new Error("[fast-vite:component-registry] debounce 必须是大于或等于 0 的有限数值。");
 	}
-	const output = options.output ?? "src/components/index.generated.ts";
-	const dts = options.dts ?? "types/components.generated.d.ts";
+	const output = options.output ?? "src/components/index.ts";
+	const dts = options.dts ?? "types/components.d.ts";
 	if (output && !/\.[cm]?ts$/i.test(output)) {
 		throw new Error("[fast-vite:component-registry] output 必须使用 TypeScript 输出扩展名 .ts、.mts 或 .cts。");
 	}

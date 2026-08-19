@@ -18,9 +18,9 @@ export interface ScannedComponent extends ComponentNameContext {
 export interface ComponentRegistryPluginOptions {
 	/** 要扫描的组件目录，相对于 Vite `root`；可以配置多个。 @defaultValue `"src/components"` */
 	dirs?: string | readonly string[];
-	/** 生成的组件导出与注册文件；设为 `false` 可关闭。 @defaultValue `"src/components/index.generated.ts"` */
+	/** 生成的组件导出与注册文件；设为 `false` 可关闭。 @defaultValue `"src/components/index.ts"` */
 	output?: false | string;
-	/** 生成的 Vue 全局组件类型声明；设为 `false` 可关闭。 @defaultValue `"types/components.generated.d.ts"` */
+	/** 生成的 Vue 全局组件类型声明；设为 `false` 可关闭。 @defaultValue `"types/components.d.ts"` */
 	dts?: false | string;
 	/** 是否递归扫描子目录。 @defaultValue `true` */
 	deep?: boolean;
