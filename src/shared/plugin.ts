@@ -42,19 +42,21 @@ export function createDebouncedTask(task: () => Awaitable<void>, delay: number, 
 				running = undefined;
 				if (queued && !disposed) {
 					queued = false;
-					schedule();
+					scheduleTask();
 				}
 			});
 	};
 
-	const schedule = ((): void => {
+	function scheduleTask(): void {
 		if (disposed) return;
 		if (timer) clearTimeout(timer);
 		timer = setTimeout((): void => {
 			timer = undefined;
 			execute();
 		}, delay);
-	}) as DebouncedTask;
+	}
+
+	const schedule = scheduleTask as DebouncedTask;
 
 	schedule.cancel = (): void => {
 		disposed = true;

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.0.7 - 2026-08-26
+
+- Preserved the original missing-source filesystem error as the `cause` of strict static-copy failures.
+- Simplified internal fallback naming and debounced task scheduling without changing the public plugin API.
+- Synchronized the self-contained ESLint Flat Config with the applicable Fast.ESLint.Config source rules and comments, refreshed compatible development dependencies, and documented the VS Code recommendations.
+
 ## 2.0.6 - 2026-08-19
 
 - Changed the default component registry outputs to `src/components/index.ts` and `types/components.d.ts`.

@@ -1,19 +1,34 @@
 {
 	"recommendations": [
+		// 使用 ESLint 检查并修复 JavaScript、TypeScript 和 Vue 代码。
 		"dbaeumer.vscode-eslint",
+		// 为 .env 文件提供语法高亮、变量提示和格式支持。
 		"dotenv.dotenv-vscode",
+		// 根据工作区样式表为 HTML 的 class 和 id 提供补全。
 		"ecmel.vscode-html-css",
+		// 使用 Prettier 统一格式化 Vue、TS、JS、JSON、HTML 和样式文件。
 		"esbenp.prettier-vscode",
+		// 为 ESLint 规则名称和诊断信息提供中文说明。
 		"maggie.eslint-rules-zh-plugin",
+		// 为 LESS 变量、Mixin、导入和符号跳转提供智能提示。
 		"mrmlnc.vscode-less",
+		// 为 SCSS 变量、Mixin、函数、导入和符号跳转提供智能提示。
 		"mrmlnc.vscode-scss",
+		// 根据文件和目录类型显示更易识别的资源管理器图标。
 		"PKief.material-icon-theme",
+		// 支持从 HTML、Vue、JSX 和 TSX 中预览或跳转到 CSS、SCSS、LESS 定义。
 		"pranaygp.vscode-css-peek",
+		// 为缩进语法的 .sass 文件提供语法高亮和语言支持。
 		"Syler.sass-indented",
+		// 为 uni-app 提供组件、API、pages.json、manifest.json 和条件编译提示。
 		"uni-helper.uni-helper-vscode",
+		// 为 Vue 3 单文件组件、模板和 TypeScript 提供官方语言服务。
 		"Vue.volar",
+		// 高亮代码区域标记，便于识别和折叠 #region 等代码块。
 		"Wiensss.region-highlighter",
+		// 扫描工作区样式并为 HTML 和模板中的 class 属性提供补全。
 		"Zignd.html-css-class-completion"
 	],
+	// Vue 3 使用 Volar，避免同时推荐可能产生语言服务冲突的 Vetur。
 	"unwantedRecommendations": ["octref.vetur"]
 }

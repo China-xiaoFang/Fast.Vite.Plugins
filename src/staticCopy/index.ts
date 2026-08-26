@@ -55,7 +55,7 @@ async function copyTargets(
 		} catch (error) {
 			if (!(error instanceof Error && "code" in error && error.code === "ENOENT")) throw error;
 			const message = `[fast-vite:static-copy] 源路径不存在：${source}`;
-			if (missing === "error") throw new Error(message);
+			if (missing === "error") throw new Error(message, { cause: error });
 			if (missing === "warn") onWarning(message);
 			continue;
 		}
