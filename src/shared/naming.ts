@@ -31,7 +31,7 @@ export function toPascalCase(value: string, fallback = "GeneratedComponent"): st
 		.join("");
 	identifier = identifier.replace(/[^\p{ID_Continue}$\u200C\u200D]/gu, "");
 
-	if (!identifier) identifier = fallback;
+	identifier ||= fallback;
 	if (!/^[$_\p{ID_Start}]/u.test(identifier)) identifier = `_${identifier}`;
 	return identifier;
 }
