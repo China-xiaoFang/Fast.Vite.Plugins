@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 2.0.9 - 2026-08-29
+
+- Changed generated component registration to use `Component.name ?? "GeneratedName"`, preserving runtime names while ensuring unnamed components are still registered with a type-safe generated fallback.
+
 ## 2.0.8 - 2026-08-29
 
 - Changed generated component registration to use each component's runtime `name`, with build warnings for statically detectable missing names and safe skipping when the runtime name is empty.

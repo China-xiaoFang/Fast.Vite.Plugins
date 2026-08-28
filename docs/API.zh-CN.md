@@ -1,6 +1,6 @@
 # API 参考
 
-本文档对应 `fast-vite-plugins@2.0.8`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
+本文档对应 `fast-vite-plugins@2.0.9`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
 
 ## 入口与异常契约
 
@@ -31,11 +31,11 @@ componentRegistry({
 | `deep`       | `boolean`                          | `true`                      | 是否递归扫描                 |
 | `extensions` | `readonly string[]`                | `vue, tsx, jsx`             | 可带或不带点号的扩展名       |
 | `include`    | `(context) => boolean`             | -                           | 返回 `false` 排除文件        |
-| `name`       | `(context) => string`              | -                           | 自定义导出标识符和注册表键名 |
+| `name`       | `(context) => string`              | -                           | 自定义导出、注册表和回退名称 |
 | `conflict`   | `"error" \| "warn" \| "overwrite"` | `"error"`                   | 重名策略                     |
 | `debounce`   | `number`                           | `80`                        | 开发监听防抖毫秒数           |
 
-`registerComponents(app)` 使用组件自身的运行时 `name`，而不是生成的导出标识符。能够静态确认组件未显式配置 `name` 时会输出构建警告；无法可靠判断包装组件或自定义宏时不告警。运行时 `name` 为空的组件会跳过注册。
+`registerComponents(app)` 通过 `app.component(Component.name ?? "GeneratedName", Component)` 优先使用组件自身的运行时 `name`，为 `null` 或 `undefined` 时回退到生成名称。能够静态确认组件未显式配置 `name` 时会输出包含回退名称的构建警告；无法可靠判断包装组件或自定义宏时不告警。`name` 回调同时控制导出标识符、注册表键名和回退注册名称。
 
 生成模块默认为每个扫描到的组件导出 `组件名Instance = InstanceType<typeof 组件名>` 实例类型。
 
