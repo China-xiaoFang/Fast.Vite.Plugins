@@ -101,7 +101,7 @@ componentRegistry({
 });
 ```
 
-生成模块提供每个组件的命名导出、`components` 注册表和 `registerComponents(app)`。`index.vue` 默认使用父目录名，所有名称都必须是唯一且合法的 JavaScript 标识符。
+生成模块提供每个组件的命名导出、`组件名Instance = InstanceType<typeof 组件名>` 实例类型、`components` 注册表和 `registerComponents(app)`。注册函数使用组件自身的运行时 `name`；能够静态确认组件未显式配置 `name` 时会输出构建警告，无法判断时不误报，运行时 `name` 为空则跳过注册。`index.vue` 默认使用父目录名，所有生成名称都必须是唯一且合法的 JavaScript 标识符。
 
 ### CDN 外部化
 

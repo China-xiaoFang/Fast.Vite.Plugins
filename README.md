@@ -96,7 +96,7 @@ componentRegistry({
 });
 ```
 
-The generated module provides named component exports, a `components` registry, and `registerComponents(app)`. An `index.vue` file uses its parent directory name by default; every generated name must be a unique JavaScript identifier.
+The generated module provides named component exports, a `NameInstance = InstanceType<typeof Name>` type for every component, a `components` registry, and `registerComponents(app)`. Registration uses each component's runtime `name`; a statically detectable missing explicit name produces a build warning, inconclusive source is left alone, and an empty runtime name is skipped. An `index.vue` file uses its parent directory name by default; every generated name must be a unique JavaScript identifier.
 
 ### CDN externalization
 

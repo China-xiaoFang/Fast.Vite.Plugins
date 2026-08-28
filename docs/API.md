@@ -1,6 +1,6 @@
 # API reference
 
-This document covers `fast-vite-plugins@2.0.7`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
+This document covers `fast-vite-plugins@2.0.8`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
 
 ## Entry points and errors
 
@@ -23,7 +23,9 @@ componentRegistry({
 });
 ```
 
-Defaults: `dirs: "src/components"`, `output: "src/components/index.ts"`, `dts: "types/components.d.ts"`, recursive scanning, `vue/tsx/jsx`, conflict errors, and an 80 ms watcher debounce. `index.vue` uses its parent folder name. Names must be unique ECMAScript identifiers.
+Defaults: `dirs: "src/components"`, `output: "src/components/index.ts"`, `dts: "types/components.d.ts"`, recursive scanning, `vue/tsx/jsx`, conflict errors, and an 80 ms watcher debounce. The `name` callback customizes the generated binding and registry key; `registerComponents(app)` instead uses each component's runtime `name`. A statically detectable missing explicit name produces a build warning, inconclusive wrappers or custom macros are left alone, and components with an empty runtime name are skipped.
+
+The generated module exports `NameInstance = InstanceType<typeof Name>` for every scanned component. An `index.vue` file uses its parent folder name. Generated names must be unique ECMAScript identifiers.
 
 ## `routerMeta(options?)`
 

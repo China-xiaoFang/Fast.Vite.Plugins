@@ -8,8 +8,8 @@ import { componentRegistry, routerMeta, svgIcons } from "../dist/index.mjs";
 
 const workspaceRoot = process.cwd();
 
-function configure(plugin, root) {
-	plugin.configResolved({ logger: { error: assert.fail, warn: assert.fail }, root });
+function configure(plugin, root, logger = { error: assert.fail, warn: assert.fail }) {
+	plugin.configResolved({ logger, root });
 	return plugin;
 }
 
@@ -25,6 +25,19 @@ test("component, router and SVG generators expose their behavior through plugin 
 	await writeFile(path.join(componentsDirectory, "base-button.vue"), "<template><button /></template>");
 	await writeFile(path.join(formDirectory, "index.vue"), "<template><form /></template>");
 	await writeFile(
+		path.join(componentsDirectory, "fast-table.tsx"),
+		'import { defineComponent } from "vue"; export default defineComponent({ name: "FastTable", render: () => null });'
+	);
+	await writeFile(
+		path.join(componentsDirectory, "generic-list.vue"),
+		'<script setup lang="ts" generic="T">defineOptions({ name: "GenericList" });</script>'
+	);
+	await writeFile(path.join(componentsDirectory, "plain-card.tsx"), "// defineComponent({ name: 'Ignored' })\nexport default () => null;");
+	await writeFile(
+		path.join(componentsDirectory, "unnamed-table.tsx"),
+		'import { defineComponent } from "vue"; export default defineComponent({ render: () => null });'
+	);
+	await writeFile(
 		path.join(viewsDirectory, "home.vue"),
 		String.raw`// defineOptions({ name: "CommentName" })
 defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, name: "HomePage" });`
@@ -39,16 +52,27 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 	const declarationsFile = path.join(root, "generated/components.d.ts");
 	const routesFile = path.join(root, "generated/routes.json");
 	const iconsFile = path.join(root, "generated/icons.ts");
+	const warnings = [];
 	try {
-		await configure(
-			componentRegistry({ dirs: "components", output: "generated/components.ts", dts: "generated/components.d.ts" }),
-			root
-		).buildStart();
+		await configure(componentRegistry({ dirs: "components", output: "generated/components.ts", dts: "generated/components.d.ts" }), root, {
+			error: assert.fail,
+			warn: (message) => warnings.push(message),
+		}).buildStart();
 		const registry = await readFile(registryFile, "utf8");
 		const declarations = await readFile(declarationsFile, "utf8");
-		assert.match(registry, /app\.component\("BaseButton", BaseButton\)/);
-		assert.match(registry, /app\.component\("Form", Form\)/);
+		assert.match(registry, /app\.component\(BaseButton\.name, BaseButton\)/);
+		assert.match(registry, /app\.component\(Form\.name, Form\)/);
+		assert.match(registry, /export type BaseButtonInstance = InstanceType<typeof BaseButton>/);
+		assert.match(registry, /export type FastTableInstance = InstanceType<typeof FastTable>/);
+		assert.match(registry, /export type FormInstance = InstanceType<typeof Form>/);
+		assert.match(registry, /export type GenericListInstance = InstanceType<typeof GenericList>/);
+		assert.match(registry, /export type PlainCardInstance = InstanceType<typeof PlainCard>/);
+		assert.match(registry, /export type UnnamedTableInstance = InstanceType<typeof UnnamedTable>/);
 		assert.doesNotMatch(registry, /@ts-nocheck/);
+		assert.equal(warnings.length, 3);
+		assert.ok(warnings.some((message) => /base-button\.vue/.test(message) && /name/.test(message)));
+		assert.ok(warnings.some((message) => /form\/index\.vue/.test(message) && /name/.test(message)));
+		assert.ok(warnings.some((message) => /unnamed-table\.tsx/.test(message) && /name/.test(message)));
 		assert.match(declarations, /declare module "vue"/);
 		assert.match(declarations, /BaseButton:/);
 
@@ -70,6 +94,10 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 		await unlink(routesFile);
 		await unlink(iconsFile);
 		await unlink(path.join(componentsDirectory, "base-button.vue"));
+		await unlink(path.join(componentsDirectory, "fast-table.tsx"));
+		await unlink(path.join(componentsDirectory, "generic-list.vue"));
+		await unlink(path.join(componentsDirectory, "plain-card.tsx"));
+		await unlink(path.join(componentsDirectory, "unnamed-table.tsx"));
 		await unlink(path.join(formDirectory, "index.vue"));
 		await unlink(path.join(viewsDirectory, "home.vue"));
 		await unlink(path.join(viewsDirectory, "plain.vue"));
@@ -96,7 +124,8 @@ test("generator plugins reject conflicts, unsupported outputs and paths outside 
 
 	const duplicatePlugin = configure(
 		componentRegistry({ dirs: "tests/fixtures/components", output: "duplicate.generated.ts", dts: false, name: () => "Duplicate" }),
-		workspaceRoot
+		workspaceRoot,
+		{ error: assert.fail, warn: () => undefined }
 	);
 	await assert.rejects(duplicatePlugin.buildStart(), /组件名称冲突/);
 });

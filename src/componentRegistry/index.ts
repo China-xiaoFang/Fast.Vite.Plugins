@@ -1,3 +1,4 @@
+import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
 	errorMessage,
@@ -31,12 +32,275 @@ interface ResolvedOptions {
 	output: false | string;
 }
 
+type ComponentNameInspection = "configured" | "missing" | "unknown";
+type OptionsInspection = "absent" | ComponentNameInspection;
+
+interface ScriptBlock {
+	attributes: string;
+	source: string;
+}
+
+/**
+ * 检查组件源码中可静态确定的运行时名称。
+ *
+ * 无法确认名称配置方式时返回 `unknown`，避免对包装组件或自定义编译宏误报。
+ *
+ * @param source - 组件源码。
+ * @param extension - 包含点号的组件文件扩展名。
+ * @returns 名称检查结果。
+ */
+function inspectComponentName(source: string, extension: string): ComponentNameInspection {
+	if (extension === ".vue") {
+		const scripts = extractScriptBlocks(source);
+		if (scripts.length === 0) return "missing";
+
+		const inspections: OptionsInspection[] = [];
+		let hasScriptSetup = false;
+		for (const script of scripts) {
+			if (/(?:^|\s)src\s*=/iu.test(script.attributes)) {
+				inspections.push("unknown");
+				continue;
+			}
+			if (/(?:^|\s)setup(?:\s|$)/iu.test(script.attributes)) {
+				hasScriptSetup = true;
+				const inspection = inspectNamedCalls(script.source, "defineOptions");
+				inspections.push(inspection === "absent" ? "missing" : inspection);
+			} else {
+				inspections.push(inspectDefaultComponentOptions(script.source));
+			}
+		}
+
+		return combineNameInspections(inspections, hasScriptSetup ? "missing" : "unknown");
+	}
+
+	if (extension === ".tsx") {
+		const defaultComponent = inspectDefaultComponentOptions(source);
+		return defaultComponent === "absent" ? "unknown" : defaultComponent;
+	}
+
+	return "unknown";
+}
+
+function extractScriptBlocks(source: string): ScriptBlock[] {
+	const scripts: ScriptBlock[] = [];
+	const pattern = /<script\b([^>]*)>([\s\S]*?)<\/script\s*>/giu;
+	for (const match of source.matchAll(pattern)) {
+		scripts.push({ attributes: match[1] ?? "", source: match[2] ?? "" });
+	}
+	return scripts;
+}
+
+function inspectDefaultComponentOptions(source: string): OptionsInspection {
+	let index = 0;
+	while (index < source.length) {
+		index = skipTrivia(source, index);
+		const quotedEnd = skipQuoted(source, index);
+		if (quotedEnd !== index) {
+			index = quotedEnd;
+			continue;
+		}
+		if (!matchesIdentifier(source, index, "export")) {
+			index += 1;
+			continue;
+		}
+
+		let cursor = skipTrivia(source, index + 6);
+		if (!matchesIdentifier(source, cursor, "default")) {
+			index += 6;
+			continue;
+		}
+		cursor = skipTrivia(source, cursor + 7);
+		if (source[cursor] === "{") return inspectObjectName(source, cursor);
+		if (matchesIdentifier(source, cursor, "defineComponent")) {
+			return inspectCallAt(source, cursor, "defineComponent") ?? "unknown";
+		}
+		return "unknown";
+	}
+	return "absent";
+}
+
+function inspectNamedCalls(source: string, name: string): OptionsInspection {
+	const inspections: ComponentNameInspection[] = [];
+	let index = 0;
+	while (index < source.length) {
+		index = skipTrivia(source, index);
+		const quotedEnd = skipQuoted(source, index);
+		if (quotedEnd !== index) {
+			index = quotedEnd;
+			continue;
+		}
+		if (!matchesIdentifier(source, index, name)) {
+			index += 1;
+			continue;
+		}
+		const inspection = inspectCallAt(source, index, name);
+		if (inspection) inspections.push(inspection);
+		index += name.length;
+	}
+	if (inspections.length === 0) return "absent";
+	return combineNameInspections(inspections, "unknown");
+}
+
+function inspectCallAt(source: string, index: number, name: string): ComponentNameInspection | undefined {
+	let cursor = skipTrivia(source, index + name.length);
+	if (source[cursor] === "<") cursor = skipTrivia(source, skipBalanced(source, cursor, "<", ">"));
+	if (source[cursor] !== "(") return undefined;
+	cursor = skipTrivia(source, cursor + 1);
+	return source[cursor] === "{" ? inspectObjectName(source, cursor) : "unknown";
+}
+
+function inspectObjectName(source: string, objectStart: number): ComponentNameInspection {
+	let braceDepth = 1;
+	let bracketDepth = 0;
+	let parenthesisDepth = 0;
+	let expectProperty = true;
+	let uncertain = false;
+	let index = objectStart + 1;
+	while (index < source.length && braceDepth > 0) {
+		index = skipTrivia(source, index);
+		if (braceDepth === 1 && bracketDepth === 0 && parenthesisDepth === 0 && expectProperty) {
+			if (source.startsWith("...", index) || source[index] === "[") uncertain = true;
+			const property = readPropertyName(source, index);
+			if (property?.name === "name") return "configured";
+			expectProperty = false;
+		}
+
+		const quotedEnd = skipQuoted(source, index);
+		if (quotedEnd !== index) {
+			index = quotedEnd;
+			continue;
+		}
+		switch (source[index]) {
+			case "{":
+				braceDepth += 1;
+				break;
+			case "}":
+				braceDepth -= 1;
+				break;
+			case "[":
+				bracketDepth += 1;
+				break;
+			case "]":
+				bracketDepth = Math.max(0, bracketDepth - 1);
+				break;
+			case "(":
+				parenthesisDepth += 1;
+				break;
+			case ")":
+				parenthesisDepth = Math.max(0, parenthesisDepth - 1);
+				break;
+			case ",":
+				if (braceDepth === 1 && bracketDepth === 0 && parenthesisDepth === 0) expectProperty = true;
+				break;
+		}
+		index += 1;
+	}
+	return uncertain || braceDepth !== 0 ? "unknown" : "missing";
+}
+
+function combineNameInspections(inspections: readonly OptionsInspection[], fallback: ComponentNameInspection): ComponentNameInspection {
+	const relevant = inspections.filter((inspection): inspection is ComponentNameInspection => inspection !== "absent");
+	if (relevant.includes("configured")) return "configured";
+	if (relevant.includes("unknown")) return "unknown";
+	return relevant.length > 0 ? "missing" : fallback;
+}
+
+function readPropertyName(source: string, index: number): { name: string } | undefined {
+	const string = readStaticString(source, index);
+	if (string) return { name: string.value };
+	if (!isIdentifierStart(source[index])) return undefined;
+	let end = index + 1;
+	while (isIdentifierCharacter(source[end])) end += 1;
+	return { name: source.slice(index, end) };
+}
+
+function readStaticString(source: string, index: number): { value: string } | undefined {
+	const quote = source[index];
+	if (quote !== '"' && quote !== "'" && quote !== "`") return undefined;
+	let value = "";
+	for (let cursor = index + 1; cursor < source.length; cursor += 1) {
+		const character = source[cursor];
+		if (character === "\\") {
+			const escaped = source[cursor + 1];
+			if (escaped === undefined) return undefined;
+			value += escaped;
+			cursor += 1;
+			continue;
+		}
+		if (quote === "`" && character === "$" && source[cursor + 1] === "{") return undefined;
+		if (character === quote) return { value };
+		value += character;
+	}
+	return undefined;
+}
+
+function skipTrivia(source: string, start: number): number {
+	let index = start;
+	while (index < source.length) {
+		if (/\s/u.test(source[index] ?? "")) {
+			index += 1;
+			continue;
+		}
+		if (source.startsWith("//", index)) {
+			const end = source.indexOf("\n", index + 2);
+			index = end < 0 ? source.length : end + 1;
+			continue;
+		}
+		if (source.startsWith("/*", index)) {
+			const end = source.indexOf("*/", index + 2);
+			index = end < 0 ? source.length : end + 2;
+			continue;
+		}
+		break;
+	}
+	return index;
+}
+
+function skipQuoted(source: string, index: number): number {
+	const quote = source[index];
+	if (quote !== '"' && quote !== "'" && quote !== "`") return index;
+	for (let cursor = index + 1; cursor < source.length; cursor += 1) {
+		if (source[cursor] === "\\") cursor += 1;
+		else if (source[cursor] === quote) return cursor + 1;
+	}
+	return source.length;
+}
+
+function skipBalanced(source: string, start: number, open: string, close: string): number {
+	let depth = 0;
+	let index = start;
+	while (index < source.length) {
+		index = skipTrivia(source, index);
+		const quotedEnd = skipQuoted(source, index);
+		if (quotedEnd !== index) {
+			index = quotedEnd;
+			continue;
+		}
+		if (source[index] === open) depth += 1;
+		else if (source[index] === close && --depth === 0) return index + 1;
+		index += 1;
+	}
+	return source.length;
+}
+
+function matchesIdentifier(source: string, index: number, value: string): boolean {
+	return source.startsWith(value, index) && !isIdentifierCharacter(source[index - 1]) && !isIdentifierCharacter(source[index + value.length]);
+}
+
+function isIdentifierStart(value: string | undefined): boolean {
+	return value !== undefined && /^[$_\p{ID_Start}]$/u.test(value);
+}
+
+function isIdentifierCharacter(value: string | undefined): boolean {
+	return value !== undefined && /^[$\u200C\u200D\p{ID_Continue}]$/u.test(value);
+}
+
 /**
  * 扫描组件目录并执行名称、扩展名和冲突策略检查。
  *
  * @param root - Vite 项目根目录的绝对路径。
  * @param options - 目录、过滤、命名和冲突策略。
- * @param onWarning - `conflict: "warn"` 时接收诊断信息的回调。
+ * @param onWarning - 接收缺少运行时名称及 `conflict: "warn"` 诊断信息的回调。
  * @returns 按最终组件名称排序的组件描述。
  */
 async function scanComponents(
@@ -77,6 +341,13 @@ async function scanComponents(
 			if (!isValidBindingIdentifier(name)) {
 				throw new Error(`[fast-vite:component-registry] 组件名称 ${JSON.stringify(name)} 不能作为生成代码绑定名：${relativePath}`);
 			}
+			const source = await readFile(absolutePath, "utf8");
+			const nameInspection = inspectComponentName(source, extension.toLowerCase());
+			if (nameInspection === "missing") {
+				onWarning(
+					`[fast-vite:component-registry] 组件未显式配置 name；registerComponents 将使用运行时 name，为空时跳过注册：${relativePath}`
+				);
+			}
 
 			const component: ScannedComponent = { ...context, name };
 			const previous = components.get(name);
@@ -94,11 +365,11 @@ async function scanComponents(
 }
 
 /**
- * 生成组件导出、只读注册表与 `registerComponents` 辅助函数源码。
+ * 生成组件导出、可用的实例类型、只读注册表与 `registerComponents` 辅助函数源码。
  *
  * @param outputFile - 生成文件的绝对路径，用于计算稳定的相对导入路径。
  * @param components - 已扫描并完成名称校验的组件描述。
- * @returns 包含命名导出、只读注册表和批量注册函数的 TypeScript 源码。
+ * @returns 包含命名导出、实例类型、只读注册表和批量注册函数的 TypeScript 源码。
  */
 function renderComponentRegistry(outputFile: string, components: readonly ScannedComponent[]): string {
 	const lines = [
@@ -114,11 +385,25 @@ function renderComponentRegistry(outputFile: string, components: readonly Scanne
 	}
 
 	if (components.length > 0) lines.push("");
-	for (const component of components) lines.push(`export { ${component.name} };`);
+	for (const component of components) {
+		lines.push(`export { ${component.name} };`);
+		lines.push(`export type ${component.name}Instance = InstanceType<typeof ${component.name}>;`);
+	}
 
 	lines.push("", `export const components = { ${components.map((component) => component.name).join(", ")} } as const;`, "");
+	if (components.length > 0) {
+		lines.push(
+			"function hasComponentName(component: unknown): component is { readonly name: string } {",
+			'\tif ((typeof component !== "object" || component === null) && typeof component !== "function") return false;',
+			'\treturn "name" in component && typeof component.name === "string" && component.name.length > 0;',
+			"}",
+			""
+		);
+	}
 	lines.push("/** 将扫描到的组件注册为 Vue 全局组件。 */", "export function registerComponents(app: App): void {");
-	for (const component of components) lines.push(`\tapp.component(${JSON.stringify(component.name)}, ${component.name});`);
+	for (const component of components) {
+		lines.push(`\tif (hasComponentName(${component.name})) app.component(${component.name}.name, ${component.name});`);
+	}
 	lines.push("}", "");
 	return `${lines.join("\n")}\n`;
 }
@@ -148,7 +433,7 @@ function renderComponentDeclarations(dtsFile: string, components: readonly Scann
 }
 
 /**
- * 扫描 Vue/TSX/JSX 组件，并生成可按需导入、批量注册的入口文件和全局组件类型。
+ * 扫描 Vue/TSX/JSX 组件，并生成可按需导入、实例类型、批量注册的入口文件和全局组件类型。
  *
  * @param options - 扫描目录、输出文件、过滤、命名和冲突策略。
  * @returns 可直接加入 Vite `plugins` 的组件注册表生成插件。
