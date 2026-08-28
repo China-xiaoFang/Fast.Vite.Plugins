@@ -4,13 +4,13 @@ export interface ComponentNameContext {
 	absolutePath: string;
 	/** 相对于当前扫描目录的路径，始终使用 `/`。 */
 	relativePath: string;
-	/** 插件根据文件名计算出的默认 PascalCase 名称。 */
+	/** 插件根据文件名计算出的默认 PascalCase 导出名称。 */
 	defaultName: string;
 }
 
 /** 扫描后用于生成注册文件与类型声明的组件信息。 */
 export interface ScannedComponent extends ComponentNameContext {
-	/** 最终使用的 JavaScript 标识符和全局组件名。 */
+	/** 最终使用的 JavaScript 标识符和注册表键名。 */
 	name: string;
 }
 
@@ -28,7 +28,7 @@ export interface ComponentRegistryPluginOptions {
 	extensions?: readonly string[];
 	/** 返回 `false` 可排除指定组件。 */
 	include?: (context: ComponentNameContext) => boolean;
-	/** 自定义组件名称。返回值必须是合法的 JavaScript 标识符。 */
+	/** 自定义导出标识符和注册表键名。返回值必须是合法的 JavaScript 标识符。 */
 	name?: (context: ComponentNameContext) => string;
 	/** 重名组件的处理方式。 @defaultValue `"error"` */
 	conflict?: "error" | "overwrite" | "warn";

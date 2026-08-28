@@ -1,6 +1,6 @@
 # API 参考
 
-本文档对应 `fast-vite-plugins@2.0.7`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
+本文档对应 `fast-vite-plugins@2.0.8`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
 
 ## 入口与异常契约
 
@@ -23,19 +23,23 @@ componentRegistry({
 });
 ```
 
-| 选项         | 类型                               | 默认值                      | 说明                   |
-| ------------ | ---------------------------------- | --------------------------- | ---------------------- |
-| `dirs`       | `string \| readonly string[]`      | `"src/components"`          | 扫描目录               |
-| `output`     | `string \| false`                  | `"src/components/index.ts"` | 组件入口；`false` 关闭 |
-| `dts`        | `string \| false`                  | `"types/components.d.ts"`   | 全局类型；`false` 关闭 |
-| `deep`       | `boolean`                          | `true`                      | 是否递归扫描           |
-| `extensions` | `readonly string[]`                | `vue, tsx, jsx`             | 可带或不带点号的扩展名 |
-| `include`    | `(context) => boolean`             | -                           | 返回 `false` 排除文件  |
-| `name`       | `(context) => string`              | -                           | 自定义组件名           |
-| `conflict`   | `"error" \| "warn" \| "overwrite"` | `"error"`                   | 重名策略               |
-| `debounce`   | `number`                           | `80`                        | 开发监听防抖毫秒数     |
+| 选项         | 类型                               | 默认值                      | 说明                         |
+| ------------ | ---------------------------------- | --------------------------- | ---------------------------- |
+| `dirs`       | `string \| readonly string[]`      | `"src/components"`          | 扫描目录                     |
+| `output`     | `string \| false`                  | `"src/components/index.ts"` | 组件入口；`false` 关闭       |
+| `dts`        | `string \| false`                  | `"types/components.d.ts"`   | 全局类型；`false` 关闭       |
+| `deep`       | `boolean`                          | `true`                      | 是否递归扫描                 |
+| `extensions` | `readonly string[]`                | `vue, tsx, jsx`             | 可带或不带点号的扩展名       |
+| `include`    | `(context) => boolean`             | -                           | 返回 `false` 排除文件        |
+| `name`       | `(context) => string`              | -                           | 自定义导出标识符和注册表键名 |
+| `conflict`   | `"error" \| "warn" \| "overwrite"` | `"error"`                   | 重名策略                     |
+| `debounce`   | `number`                           | `80`                        | 开发监听防抖毫秒数           |
 
-`index.vue` 默认使用父目录名称。名称必须是唯一且合法的 ECMAScript 标识符。`output` 和 `dts` 不能同时关闭。
+`registerComponents(app)` 使用组件自身的运行时 `name`，而不是生成的导出标识符。能够静态确认组件未显式配置 `name` 时会输出构建警告；无法可靠判断包装组件或自定义宏时不告警。运行时 `name` 为空的组件会跳过注册。
+
+生成模块默认为每个扫描到的组件导出 `组件名Instance = InstanceType<typeof 组件名>` 实例类型。
+
+`index.vue` 默认使用父目录名称。生成名称必须是唯一且合法的 ECMAScript 标识符。`output` 和 `dts` 不能同时关闭。
 
 ## `routerMeta(options?)`
 
