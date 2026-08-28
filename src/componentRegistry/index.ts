@@ -345,7 +345,7 @@ async function scanComponents(
 			const nameInspection = inspectComponentName(source, extension.toLowerCase());
 			if (nameInspection === "missing") {
 				onWarning(
-					`[fast-vite:component-registry] 组件未显式配置 name；registerComponents 将使用运行时 name，为空时跳过注册：${relativePath}`
+					`[fast-vite:component-registry] 组件未显式配置 name；registerComponents 将回退使用 ${JSON.stringify(name)}：${relativePath}`
 				);
 			}
 
@@ -391,18 +391,9 @@ function renderComponentRegistry(outputFile: string, components: readonly Scanne
 	}
 
 	lines.push("", `export const components = { ${components.map((component) => component.name).join(", ")} } as const;`, "");
-	if (components.length > 0) {
-		lines.push(
-			"function hasComponentName(component: unknown): component is { readonly name: string } {",
-			'\tif ((typeof component !== "object" || component === null) && typeof component !== "function") return false;',
-			'\treturn "name" in component && typeof component.name === "string" && component.name.length > 0;',
-			"}",
-			""
-		);
-	}
 	lines.push("/** 将扫描到的组件注册为 Vue 全局组件。 */", "export function registerComponents(app: App): void {");
 	for (const component of components) {
-		lines.push(`\tif (hasComponentName(${component.name})) app.component(${component.name}.name, ${component.name});`);
+		lines.push(`\tapp.component(${component.name}.name ?? ${JSON.stringify(component.name)}, ${component.name});`);
 	}
 	lines.push("}", "");
 	return `${lines.join("\n")}\n`;

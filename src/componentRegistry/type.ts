@@ -28,7 +28,7 @@ export interface ComponentRegistryPluginOptions {
 	extensions?: readonly string[];
 	/** 返回 `false` 可排除指定组件。 */
 	include?: (context: ComponentNameContext) => boolean;
-	/** 自定义导出标识符和注册表键名。返回值必须是合法的 JavaScript 标识符。 */
+	/** 自定义导出标识符、注册表键名和运行时名称为空时的注册名称。返回值必须是合法的 JavaScript 标识符。 */
 	name?: (context: ComponentNameContext) => string;
 	/** 重名组件的处理方式。 @defaultValue `"error"` */
 	conflict?: "error" | "overwrite" | "warn";

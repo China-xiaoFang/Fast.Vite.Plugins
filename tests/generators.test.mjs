@@ -60,8 +60,9 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 		}).buildStart();
 		const registry = await readFile(registryFile, "utf8");
 		const declarations = await readFile(declarationsFile, "utf8");
-		assert.match(registry, /app\.component\(BaseButton\.name, BaseButton\)/);
-		assert.match(registry, /app\.component\(Form\.name, Form\)/);
+		assert.match(registry, /app\.component\(BaseButton\.name \?\? "BaseButton", BaseButton\)/);
+		assert.match(registry, /app\.component\(Form\.name \?\? "Form", Form\)/);
+		assert.doesNotMatch(registry, /hasComponentName/);
 		assert.match(registry, /export type BaseButtonInstance = InstanceType<typeof BaseButton>/);
 		assert.match(registry, /export type FastTableInstance = InstanceType<typeof FastTable>/);
 		assert.match(registry, /export type FormInstance = InstanceType<typeof Form>/);
@@ -70,9 +71,9 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 		assert.match(registry, /export type UnnamedTableInstance = InstanceType<typeof UnnamedTable>/);
 		assert.doesNotMatch(registry, /@ts-nocheck/);
 		assert.equal(warnings.length, 3);
-		assert.ok(warnings.some((message) => /base-button\.vue/.test(message) && /name/.test(message)));
-		assert.ok(warnings.some((message) => /form\/index\.vue/.test(message) && /name/.test(message)));
-		assert.ok(warnings.some((message) => /unnamed-table\.tsx/.test(message) && /name/.test(message)));
+		assert.ok(warnings.some((message) => /base-button\.vue/.test(message) && /"BaseButton"/.test(message)));
+		assert.ok(warnings.some((message) => /form\/index\.vue/.test(message) && /"Form"/.test(message)));
+		assert.ok(warnings.some((message) => /unnamed-table\.tsx/.test(message) && /"UnnamedTable"/.test(message)));
 		assert.match(declarations, /declare module "vue"/);
 		assert.match(declarations, /BaseButton:/);
 
