@@ -503,8 +503,10 @@ export default defineConfig(
 						// Lodash、lodash-es、lodash-unified 及其子路径
 						{ pattern: "lodash{,-es,-unified}{,/**}", group: "external", position: "before" },
 					],
-					// 类型导入不参与 pathGroups 匹配，始终保留在 type 分组
+					// 类型导入不参与自定义 pathGroups 匹配，统一保留在 type 总分组
 					pathGroupsExcludedImportTypes: ["type"],
+					// type 总分组内部继续按照 builtin、external、internal、parent、sibling、index 来源层级排序
+					sortTypesGroup: true,
 					// 所有 import 分组连续排列，不保留空行
 					"newlines-between": "never",
 					// 同一分组内按照模块路径字母升序排列

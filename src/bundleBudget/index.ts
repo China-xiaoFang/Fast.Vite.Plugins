@@ -1,6 +1,7 @@
 import { compressBytes } from "../shared/compression";
 import { compareStrings } from "../shared/naming";
 import { assertPostBuildPluginOrder } from "../shared/order";
+import type { Plugin } from "vite";
 import type {
 	BundleBudgetEvaluation,
 	BundleBudgetFilter,
@@ -10,7 +11,6 @@ import type {
 	BundleSizeMode,
 	MeasurableBundleOutput,
 } from "./type";
-import type { Plugin } from "vite";
 
 export type { BundleBudgetFilter, BundleBudgetPluginOptions, BundleBudgetRule, BundleOutputType, BundleSizeMode } from "./type";
 

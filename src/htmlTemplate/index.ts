@@ -1,5 +1,5 @@
-import type { Awaitable } from "../shared/plugin";
 import type { ConfigEnv, HtmlTagDescriptor, Plugin } from "vite";
+import type { Awaitable } from "../shared/plugin";
 
 /** 可安全转换为 HTML 文本的模板值。 */
 export type HtmlTemplateValue = boolean | number | string;

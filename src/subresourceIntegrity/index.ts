@@ -3,6 +3,7 @@ import path from "node:path";
 import { isSafeOutputFileName, normalizePath } from "../shared/fileSystem";
 import { compareStrings } from "../shared/naming";
 import { assertPostBuildPluginOrder } from "../shared/order";
+import type { Plugin, ResolvedConfig } from "vite";
 import type {
 	IntegrityInjectionOptions,
 	IntegrityInjectionResult,
@@ -10,7 +11,6 @@ import type {
 	SubresourceIntegrityFilter,
 	SubresourceIntegrityPluginOptions,
 } from "./type";
-import type { Plugin, ResolvedConfig } from "vite";
 
 export type { IntegrityCrossorigin, SubresourceIntegrityAlgorithm, SubresourceIntegrityFilter, SubresourceIntegrityPluginOptions } from "./type";
 

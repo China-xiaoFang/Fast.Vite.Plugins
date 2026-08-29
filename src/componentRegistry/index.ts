@@ -13,8 +13,8 @@ import {
 } from "../shared/fileSystem";
 import { compareStrings, isValidBindingIdentifier, toPascalCase } from "../shared/naming";
 import { createDebouncedTask, onServerClose } from "../shared/plugin";
-import type { ComponentNameContext, ComponentRegistryPluginOptions, ScannedComponent } from "./type";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
+import type { ComponentNameContext, ComponentRegistryPluginOptions, ScannedComponent } from "./type";
 
 export type { ComponentNameContext, ComponentRegistryPluginOptions } from "./type";
 
@@ -372,19 +372,18 @@ async function scanComponents(
  * @returns 包含命名导出、实例类型、只读注册表和批量注册函数的 TypeScript 源码。
  */
 function renderComponentRegistry(outputFile: string, components: readonly ScannedComponent[]): string {
-	const lines = [
-		"/* eslint-disable */",
-		"/* prettier-ignore */",
-		"// 此文件由 fast-vite-plugins 自动生成，请勿手动编辑。",
-		'import type { App } from "vue";',
-		"",
-	];
+	const lines = ["/* eslint-disable */", "/* prettier-ignore */", "// 此文件由 fast-vite-plugins 自动生成，请勿手动编辑。"];
 
-	for (const component of components) {
-		lines.push(`import ${component.name} from ${JSON.stringify(relativeImportPath(outputFile, component.absolutePath))};`);
+	const componentImports = components
+		.map((component) => ({ component, importPath: relativeImportPath(outputFile, component.absolutePath) }))
+		.sort((left, right) => {
+			const insensitiveOrder = compareStrings(left.importPath.toLowerCase(), right.importPath.toLowerCase());
+			return insensitiveOrder || compareStrings(left.importPath, right.importPath);
+		});
+	for (const { component, importPath } of componentImports) {
+		lines.push(`import ${component.name} from ${JSON.stringify(importPath)};`);
 	}
-
-	if (components.length > 0) lines.push("");
+	lines.push('import type { App } from "vue";', "");
 	for (const component of components) {
 		lines.push(`export { ${component.name} };`);
 		lines.push(`export type ${component.name}Instance = InstanceType<typeof ${component.name}>;`);

@@ -1,8 +1,8 @@
 import { compressBytes } from "../shared/compression";
 import { isSafeOutputFileName } from "../shared/fileSystem";
 import { assertPostBuildPluginOrder } from "../shared/order";
-import type { CompressionPluginOptions } from "./type";
 import type { Plugin } from "vite";
+import type { CompressionPluginOptions } from "./type";
 
 export type { CompressionAlgorithm, CompressionPluginOptions } from "./type";
 
