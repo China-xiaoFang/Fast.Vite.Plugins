@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 2.0.10 - 2026-08-29
+
+- Enabled source-group ordering inside the TypeScript type-import group and aligned repository type imports with the resulting builtin, external, internal, parent, sibling, and index hierarchy.
+- Sorted generated component imports by module source path and placed the Vue `App` type import after value imports so generated registries remain compatible with the ESLint import order.
+
 ## 2.0.9 - 2026-08-29
 
 - Changed generated component registration to use `Component.name ?? "GeneratedName"`, preserving runtime names while ensuring unnamed components are still registered with a type-safe generated fallback.

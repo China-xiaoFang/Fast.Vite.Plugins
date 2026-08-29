@@ -15,6 +15,7 @@ import {
 	svgIcons,
 	virtualModules,
 } from "fast-vite-plugins";
+import type { Plugin } from "vite";
 import type {
 	BuildInfoPluginOptions,
 	BundleBudgetPluginOptions,
@@ -30,7 +31,6 @@ import type {
 	SvgIconsPluginOptions,
 	VirtualModulesPluginOptions,
 } from "fast-vite-plugins";
-import type { Plugin } from "vite";
 
 const buildInfoOptions: BuildInfoPluginOptions = { version: "2.0.0" };
 const bundleBudgetOptions: BundleBudgetPluginOptions = { budgets: [{ filter: /\.js$/, limit: 250_000 }] };

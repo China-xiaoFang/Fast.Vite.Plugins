@@ -1,5 +1,5 @@
-import type { Awaitable } from "../shared/plugin";
 import type { ConfigEnv, Plugin, ResolvedConfig } from "vite";
+import type { Awaitable } from "../shared/plugin";
 
 /** 传递给动态虚拟模块源码提供者的上下文。 */
 export interface VirtualModuleContext extends ConfigEnv {

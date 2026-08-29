@@ -1,7 +1,7 @@
 import path from "node:path";
 import { loadEnv } from "vite";
-import type { EnvGuardPluginOptions, EnvRule, EnvSchema, EnvValidationIssue } from "./type";
 import type { Plugin } from "vite";
+import type { EnvGuardPluginOptions, EnvRule, EnvSchema, EnvValidationIssue } from "./type";
 
 export type { EnvGuardPluginOptions, EnvRule, EnvSchema } from "./type";
 

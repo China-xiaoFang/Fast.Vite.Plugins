@@ -1,5 +1,5 @@
-import type { Awaitable, JsonValue } from "../shared/plugin";
 import type { ConfigEnv } from "vite";
+import type { Awaitable, JsonValue } from "../shared/plugin";
 
 /**
  * 构建信息插件生成的标准元数据。

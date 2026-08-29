@@ -1,5 +1,5 @@
-import type { Awaitable } from "../shared/plugin";
 import type { ConfigEnv, HtmlTagDescriptor } from "vite";
+import type { Awaitable } from "../shared/plugin";
 
 /** 注入到 Vite HTML 标签的属性字典。 */
 export type CdnTagAttributes = NonNullable<HtmlTagDescriptor["attrs"]>;

@@ -49,6 +49,7 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 	await writeFile(path.join(iconsDirectory, "add.svg"), '<svg width="24" height="24"><path fill="currentColor" /></svg>');
 
 	const registryFile = path.join(root, "generated/components.ts");
+	const customRegistryFile = path.join(root, "generated/custom-components.ts");
 	const declarationsFile = path.join(root, "generated/components.d.ts");
 	const routesFile = path.join(root, "generated/routes.json");
 	const iconsFile = path.join(root, "generated/icons.ts");
@@ -63,6 +64,8 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 		assert.match(registry, /app\.component\(BaseButton\.name \?\? "BaseButton", BaseButton\)/);
 		assert.match(registry, /app\.component\(Form\.name \?\? "Form", Form\)/);
 		assert.doesNotMatch(registry, /hasComponentName/);
+		const importLines = registry.split("\n").filter((line) => line.startsWith("import "));
+		assert.equal(importLines.at(-1), 'import type { App } from "vue";');
 		assert.match(registry, /export type BaseButtonInstance = InstanceType<typeof BaseButton>/);
 		assert.match(registry, /export type FastTableInstance = InstanceType<typeof FastTable>/);
 		assert.match(registry, /export type FormInstance = InstanceType<typeof Form>/);
@@ -76,6 +79,30 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 		assert.ok(warnings.some((message) => /unnamed-table\.tsx/.test(message) && /"UnnamedTable"/.test(message)));
 		assert.match(declarations, /declare module "vue"/);
 		assert.match(declarations, /BaseButton:/);
+
+		await configure(
+			componentRegistry({
+				dirs: "components",
+				output: "generated/custom-components.ts",
+				dts: false,
+				name: ({ defaultName }) => {
+					if (defaultName === "BaseButton") return "ZBaseButton";
+					if (defaultName === "FastTable") return "AFastTable";
+					return defaultName;
+				},
+			}),
+			root,
+			{ error: assert.fail, warn: () => undefined }
+		).buildStart();
+		const customRegistry = await readFile(customRegistryFile, "utf8");
+		assert.ok(
+			customRegistry.indexOf('import ZBaseButton from "../components/base-button.vue";') <
+				customRegistry.indexOf('import AFastTable from "../components/fast-table.tsx";')
+		);
+		assert.ok(
+			customRegistry.indexOf('import UnnamedTable from "../components/unnamed-table.tsx";') <
+				customRegistry.indexOf('import type { App } from "vue";')
+		);
 
 		await configure(routerMeta({ dir: "views", output: "generated/routes.json" }), root).buildStart();
 		assert.deepEqual(JSON.parse(await readFile(routesFile, "utf8")), {
@@ -91,6 +118,7 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 		assert.match(iconModule, /h\("svg"/);
 	} finally {
 		await unlink(registryFile);
+		await unlink(customRegistryFile);
 		await unlink(declarationsFile);
 		await unlink(routesFile);
 		await unlink(iconsFile);
