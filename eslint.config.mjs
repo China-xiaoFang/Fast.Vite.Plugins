@@ -9,6 +9,95 @@ import eslintPluginRegexp from "eslint-plugin-regexp";
 import globals from "globals";
 import tseslint from "typescript-eslint";
 
+const STYLE_IMPORT_PATTERN = /\.(?:acss|css|less|pcss|postcss|sass|scss|sss|styl|stylus|ttss|wxss)(?:[?#].*)?$/i;
+
+const isStyleImport = (source) => typeof source === "string" && STYLE_IMPORT_PATTERN.test(source);
+
+const importOrderRule = eslintPluginImportX.rules.order;
+
+if (importOrderRule === undefined) {
+	throw new Error("eslint-plugin-import-x does not provide the order rule.");
+}
+
+/**
+ * 复用 import-x/order 的全部行为，但把样式导入交给 style-imports-last 独立处理。
+ *
+ * @remarks
+ * import-x/order 没有按路径忽略导入的选项。过滤静态样式 import 可以避免
+ * alphabetize 改变 CSS 层叠顺序，其他副作用导入仍受 warnOnUnassignedImports 约束。
+ */
+const importOrderWithoutStylesRule = {
+	...importOrderRule,
+	create(context) {
+		const listeners = importOrderRule.create(context);
+		const checkImport = listeners.ImportDeclaration;
+
+		return {
+			...listeners,
+			ImportDeclaration(node) {
+				if (!isStyleImport(node.source.value)) {
+					checkImport?.(node);
+				}
+			},
+		};
+	},
+};
+
+/** 只要求样式导入形成文件顶部 import 区域的最后一个连续分组，不改变组内顺序。 */
+const styleImportsLastRule = {
+	meta: {
+		type: "suggestion",
+		docs: {
+			description: "Require stylesheet imports to form the final contiguous import group without sorting them.",
+		},
+		schema: [],
+		messages: {
+			styleImportsLast: "Style import `{{source}}` must occur after all non-style imports.",
+		},
+	},
+	create(context) {
+		return {
+			Program(node) {
+				const imports = node.body.filter((statement) => statement.type === "ImportDeclaration");
+				let lastNonStyleImportIndex = -1;
+
+				for (const [index, statement] of imports.entries()) {
+					if (!isStyleImport(statement.source.value)) {
+						lastNonStyleImportIndex = index;
+					}
+				}
+
+				for (const statement of imports.slice(0, lastNonStyleImportIndex)) {
+					if (isStyleImport(statement.source.value)) {
+						context.report({
+							node: statement,
+							messageId: "styleImportsLast",
+							data: { source: statement.source.value },
+						});
+					}
+				}
+			},
+		};
+	},
+};
+
+/** import-x 插件适配：样式导入不参与 import-x/order，其他规则保持上游实现。 */
+const styleAwareImportXPlugin = {
+	...eslintPluginImportX,
+	rules: {
+		...eslintPluginImportX.rules,
+		order: importOrderWithoutStylesRule,
+		"style-imports-last": styleImportsLastRule,
+	},
+};
+
+const importXRecommended = {
+	...eslintPluginImportX.flatConfigs.recommended,
+	plugins: {
+		"import-x": styleAwareImportXPlugin,
+	},
+};
+
 /**
  * 跨 JavaScript、TypeScript 与 Vue 脚本生效的公共规则。
  *
@@ -341,12 +430,12 @@ export default defineConfig(
 			"@typescript-eslint/no-non-null-assertion": "error",
 			// 可选链之后再做非空断言逻辑矛盾，通常表示边界条件设计有误。
 			"@typescript-eslint/no-non-null-asserted-optional-chain": "error",
-			// 纯类型依赖必须标记为 type import，并在混合导入中修复为 `import { type Foo, value }`，避免生成无用运行时导入。
+			// 纯类型依赖必须使用独立的 `import type`，避免生成无用运行时导入并统一导入声明结构。
 			"@typescript-eslint/consistent-type-imports": [
 				"error",
 				{
 					disallowTypeAnnotations: false,
-					fixStyle: "inline-type-imports",
+					fixStyle: "separate-type-imports",
 					prefer: "type-imports",
 				},
 			],
@@ -362,7 +451,7 @@ export default defineConfig(
 	{
 		name: "fast-vite-plugins/import",
 		files: ["**/*.{js,cjs,mjs,jsx}", "**/*.{ts,cts,mts,tsx}"],
-		extends: [eslintPluginImportX.flatConfigs.recommended],
+		extends: [importXRecommended],
 		/**
 		 * 默认启用的模块导入正确性与排序规则。
 		 *
@@ -375,7 +464,7 @@ export default defineConfig(
 			"import-x/first": "error",
 			// 合并同一模块的重复 import，避免绑定分散或副作用被误读。
 			"import-x/no-duplicates": "error",
-			// 按来源分组并排序，保持所有项目一致的模块结构。
+			// 非样式 import 按来源分组并排序，保持所有项目一致的模块结构。
 			"import-x/order": [
 				"error",
 				{
@@ -423,10 +512,12 @@ export default defineConfig(
 						order: "asc",
 						caseInsensitive: true,
 					},
-					// 副作用导入同样参与检查；修复前必须确认样式、polyfill 和注册器执行顺序
+					// 普通副作用导入同样参与检查；修复前必须确认 polyfill 和注册器执行顺序
 					warnOnUnassignedImports: true,
 				},
 			],
+			// 样式导入必须形成最后一个连续分组；不自动修复，避免改变 CSS 层叠顺序。
+			"import-x/style-imports-last": "error",
 			// [默认关闭] Vite/TypeScript 别名由项目解析器校验，避免共享配置绑定特定 resolver。
 			"import-x/no-unresolved": "off",
 			// [默认关闭] 未配置 resolver 时，namespace 导出的静态分析容易产生误报。
