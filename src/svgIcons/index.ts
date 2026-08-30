@@ -313,7 +313,8 @@ function renderSvgIconIndex(outputs: readonly SvgIconOutput[]): string {
 	if (names.length === 0) {
 		lines.push("export default {} as const;");
 	} else {
-		lines.push(`export { ${names.join(", ")} };`, "", "export default {");
+		for (const name of names) lines.push(`export { ${name} };`);
+		lines.push("", "export default {");
 		for (const name of names) lines.push(`\t${name},`);
 		lines.push("} as const;");
 	}
@@ -392,7 +393,7 @@ function resolveOptions(options: SvgIconsPluginOptions): ResolvedOptions {
 	if (options.dir !== undefined && !options.dir.trim()) throw new Error("[fast-vite:svg-icons] dir 不能为空路径。");
 	return {
 		componentPrefix: options.componentPrefix ?? "",
-		componentSuffix: options.componentSuffix ?? "Icon",
+		componentSuffix: options.componentSuffix ?? "",
 		debounce: options.debounce ?? 80,
 		deep: options.deep ?? true,
 		defaultAttributes: options.defaultAttributes ?? {},

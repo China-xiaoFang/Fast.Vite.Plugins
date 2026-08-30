@@ -1,6 +1,6 @@
 # API 参考
 
-本文档对应 `fast-vite-plugins@2.0.11`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
+本文档对应 `fast-vite-plugins@2.0.12`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
 
 ## 入口与异常契约
 
@@ -76,7 +76,6 @@ svgIcons({
 	dir: "src/assets/icons",
 	output: "src/icons/index.ts",
 	componentPrefix: "App",
-	componentSuffix: "Icon",
 	removeDimensions: true,
 	defaultAttributes: { "aria-hidden": "true", focusable: false },
 });
@@ -88,7 +87,7 @@ svgIcons({
 | `output`            | `"src/icons/index.ts"` | 图标根索引                      |
 | `deep`              | `true`                 | 是否递归                        |
 | `componentPrefix`   | `""`                   | 组件名前缀                      |
-| `componentSuffix`   | `"Icon"`               | 组件名后缀                      |
+| `componentSuffix`   | `""`                   | 组件名后缀                      |
 | `include` / `name`  | -                      | 文件过滤器 / 命名器             |
 | `defaultAttributes` | `{}`                   | 默认根属性，源 SVG 同名属性优先 |
 | `removeDimensions`  | `false`                | 删除 `width` / `height`         |

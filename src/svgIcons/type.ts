@@ -39,7 +39,7 @@ export interface SvgIconsPluginOptions {
 	deep?: boolean;
 	/** 默认组件名前缀。 @defaultValue `""` */
 	componentPrefix?: string;
-	/** 默认组件名后缀。 @defaultValue `"Icon"` */
+	/** 默认组件名后缀。 @defaultValue `""` */
 	componentSuffix?: string;
 	/** 返回 `false` 时排除当前 SVG。 */
 	include?: (context: SvgIconNameContext) => boolean;
