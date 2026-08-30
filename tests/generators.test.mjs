@@ -130,19 +130,19 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 		const iconIndex = await readFile(iconsFile, "utf8");
 		const iconComponent = await readFile(iconComponentFile, "utf8");
 		assert.match(iconIndex, /@generated 由 fast-vite-plugins 的 `svgIcons` 方法自动生成。/);
-		assert.match(iconIndex, /\*\/\n\nimport AddIcon from "\.\/add\/index";/);
-		assert.match(iconIndex, /export \{ AddIcon, RemoveIcon \};\n\nexport default \{\n\tAddIcon,\n\tRemoveIcon,\n\} as const;/);
+		assert.match(iconIndex, /\*\/\n\nimport Add from "\.\/add\/index";/);
+		assert.match(iconIndex, /export \{ Add \};\nexport \{ Remove \};\n\nexport default \{\n\tAdd,\n\tRemove,\n\} as const;/);
 		assert.doesNotMatch(iconIndex, /export const icons|defineComponent|eslint-disable|prettier-ignore/);
 		assert.match(iconComponent, /@generated 由 fast-vite-plugins 的 `svgIcons` 方法自动生成。/);
 		assert.match(iconComponent, /import \{ defineComponent \} from "vue";/);
-		assert.match(iconComponent, /\*\*\n \* AddIcon 图标组件。\n \*\//);
-		assert.match(iconComponent, /export const AddIcon/);
+		assert.match(iconComponent, /\*\*\n \* Add 图标组件。\n \*\//);
+		assert.match(iconComponent, /export const Add/);
 		assert.match(iconComponent, /<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg" viewBox="0 0 24 24">/);
 		assert.match(iconComponent, /<path\n\t+d="M1 1/);
 		assert.match(iconComponent, /\n\t+fill="currentColor"\n\t+\/>/);
 		assert.doesNotMatch(iconComponent, /width=/);
 		assert.doesNotMatch(iconComponent, /\bh\(|innerHTML/);
-		assert.match(iconComponent, /export default AddIcon/);
+		assert.match(iconComponent, /export default Add/);
 		assert.doesNotMatch(iconComponent, /eslint-disable|prettier-ignore/);
 
 		await configure(svgIcons({ dir: "empty-icons", output: "generated/empty-icons.ts" }), root).buildStart();

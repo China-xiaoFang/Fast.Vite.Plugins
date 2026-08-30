@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 2.0.12 - 2026-08-30
+
+- Changed the generated SVG icon root index to emit one named export per line, keeping large icon collections stable under formatting.
+- Removed the default `Icon` component-name suffix; `about.svg` now generates `About` unless `componentSuffix` is configured explicitly.
+
 ## 2.0.11 - 2026-08-30
 
 - Simplified `componentRegistry` output by removing the generated component object while retaining named exports, `NameInstance` types, and `registerComponents`; registration now uses each runtime component name directly, while statically detectable missing names only warn during generation.

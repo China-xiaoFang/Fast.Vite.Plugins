@@ -1,6 +1,6 @@
 # API reference
 
-This document covers `fast-vite-plugins@2.0.11`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
+This document covers `fast-vite-plugins@2.0.12`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
 
 ## Entry points and errors
 
@@ -43,7 +43,6 @@ Generates independent Vue TSX components and a root index from an SVG folder. Ea
 svgIcons({
 	dir: "src/assets/icons",
 	output: "src/icons/index.ts",
-	componentSuffix: "Icon",
 	removeDimensions: true,
 });
 ```
