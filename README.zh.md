@@ -26,9 +26,9 @@
 
 | API                    | 用途                                               |
 | ---------------------- | -------------------------------------------------- |
-| `componentRegistry`    | 扫描 Vue/TSX/JSX 组件，生成注册入口和 Vue 全局类型 |
+| `componentRegistry`    | 扫描 Vue/TSX/JSX 组件，生成导出入口和 Vue 全局类型 |
 | `routerMeta`           | 生成页面路径与稳定组件名 JSON 映射                 |
-| `svgIcons`             | 将 SVG 目录生成单文件 Vue 图标组件模块             |
+| `svgIcons`             | 将 SVG 目录生成独立 Vue 图标组件与根索引           |
 | `cdnImport`            | 注入 CDN 标签，并将 ESM 导入映射为浏览器全局变量   |
 | `buildInfo`            | 输出构建信息 JSON、开发端点和虚拟模块              |
 | `bundleBudget`         | 对单文件或产物总和执行原始/压缩体积预算            |
@@ -101,7 +101,7 @@ componentRegistry({
 });
 ```
 
-生成模块提供每个组件的命名导出、`组件名Instance = InstanceType<typeof 组件名>` 实例类型、`components` 注册表和 `registerComponents(app)`。注册函数优先使用组件自身的运行时 `name`，为 `null` 或 `undefined` 时回退到生成名称，形式为 `app.component(Component.name ?? "GeneratedName", Component)`；能够静态确认组件未显式配置 `name` 时会输出包含回退名称的构建警告，无法判断时不误报。`index.vue` 默认使用父目录名，所有生成名称都必须是唯一且合法的 JavaScript 标识符。
+生成模块为每个组件提供命名导出、`组件名Instance = InstanceType<typeof 组件名>` 实例类型和 `registerComponents(app)`，注册代码直接使用 `app.component(Component.name, Component)`。插件能够静态确认组件未声明运行时 `name` 时会在生成阶段警告，但仍继续生成；无法可靠判断时默认按已声明处理。类型声明文件同步增强 Vue `GlobalComponents`。`index.vue` 默认使用父目录名，所有生成名称都必须是唯一且合法的 JavaScript 标识符。
 
 ### CDN 外部化
 
@@ -164,7 +164,7 @@ devRestart({
 
 ## 安全与部署提示
 
-- `svgIcons` 会通过 `innerHTML` 渲染 SVG 内部标记，扫描目录只能包含受信任的仓库资源。
+- `svgIcons` 会把 SVG 标记直接写入生成的 Vue TSX 组件；消费项目需要启用 Vue JSX/TSX 转换，扫描目录只能包含受信任的仓库资源。
 - SRI 插件只计算本次构建的本地资源；远程 CDN 仍需固定版本，并单独配置 CSP 与 integrity 元数据。
 - 预压缩插件只生成 `.gz` / `.br` 文件，Web 服务器或对象存储仍需按 `Accept-Encoding` 正确返回资源。
 - 本仓库发布的是 npm 库，不是可直接部署的网站；应用部署的是消费项目构建得到的 `dist/`。

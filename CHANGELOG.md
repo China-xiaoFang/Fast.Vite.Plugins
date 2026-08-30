@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.0.11 - 2026-08-30
+
+- Simplified `componentRegistry` output by removing the generated component object while retaining named exports, `NameInstance` types, and `registerComponents`; registration now uses each runtime component name directly, while statically detectable missing names only warn during generation.
+- Changed `svgIcons` to emit one `defineComponent`-based inline-TSX `<SVG relative path>/index.tsx` component per source file plus a root index that directly default-exports the readonly icon object.
+- Replaced generated lint and format suppression directives with a method-specific Chinese `@generated` header and a blank line before generated code.
+
 ## 2.0.10 - 2026-08-29
 
 - Enabled source-group ordering inside the TypeScript type-import group and aligned repository type imports with the resulting builtin, external, internal, parent, sibling, and index hierarchy.

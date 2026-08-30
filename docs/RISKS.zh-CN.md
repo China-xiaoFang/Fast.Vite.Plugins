@@ -8,7 +8,7 @@
 
 ## SVG 与原始 HTML
 
-`svgIcons` 通过 Vue `innerHTML` 渲染 SVG 内部标记，只能扫描已审核的仓库 SVG。`htmlTemplate({ escape: false })` 只能接收可信静态内容，不能接收用户可控值。
+`svgIcons` 会把 SVG 标记直接写入生成的 TSX 源码，只能扫描已审核的仓库 SVG。`htmlTemplate({ escape: false })` 只能接收可信静态内容，不能接收用户可控值。
 
 ## 构建信息公开
 

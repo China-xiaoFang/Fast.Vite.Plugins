@@ -26,9 +26,9 @@ An open-source collection of production-grade Vite plugins for modern Web applic
 
 | API                    | Purpose                                                 |
 | ---------------------- | ------------------------------------------------------- |
-| `componentRegistry`    | Generate a Vue component registry and global types      |
+| `componentRegistry`    | Generate Vue component exports and global types         |
 | `routerMeta`           | Generate a route-file to component-name JSON map        |
-| `svgIcons`             | Generate typed Vue icon components from an SVG folder   |
+| `svgIcons`             | Generate independent Vue icon components and an index   |
 | `cdnImport`            | Map ESM imports to CDN-provided browser globals         |
 | `buildInfo`            | Emit build metadata, a dev endpoint, and virtual module |
 | `bundleBudget`         | Enforce per-file or total raw/compressed size budgets   |
@@ -96,7 +96,7 @@ componentRegistry({
 });
 ```
 
-The generated module provides named component exports, a `NameInstance = InstanceType<typeof Name>` type for every component, a `components` registry, and `registerComponents(app)`. Registration prefers each component's runtime `name` and falls back when it is nullish through `app.component(Component.name ?? "GeneratedName", Component)`. A statically detectable missing explicit name produces a build warning containing that fallback, while inconclusive source is left alone. An `index.vue` file uses its parent directory name by default; every generated name must be a unique JavaScript identifier.
+The generated module provides a named component export, a `NameInstance = InstanceType<typeof Name>` type for every component, and `registerComponents(app)`, which directly uses `app.component(Component.name, Component)`. When the plugin can statically confirm that a runtime `name` is missing, it warns during generation but still emits the component; inconclusive source is treated as named. The declaration output augments Vue's `GlobalComponents`. An `index.vue` file uses its parent directory name by default; every generated name must be a unique JavaScript identifier.
 
 ### CDN externalization
 
@@ -159,7 +159,7 @@ Use `devRestart()` for configuration inputs outside Vite's module graph. Vite al
 
 ## Operational notes
 
-- SVG internals are rendered with `innerHTML`; only scan trusted repository assets.
+- `svgIcons` writes SVG markup directly into generated Vue TSX components. Enable Vue JSX/TSX transformation in the consuming project and only scan trusted repository assets.
 - The SRI plugin hashes local build outputs. Pin CDN versions and provide integrity metadata for remote CDN resources separately.
 - Precompression emits `.gz` and `.br`; your server or object storage must serve them based on `Accept-Encoding`.
 - When using SRI, budgets, and precompression together, keep this order in `plugins`: SRI → budgets → compression.

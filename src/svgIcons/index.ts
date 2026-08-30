@@ -1,7 +1,15 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { errorMessage, isPathInside, normalizePath, resolvePathInside, scanFiles, writeFileIfChanged } from "../shared/fileSystem";
-import { compareStrings, isValidBindingIdentifier, toPascalCase } from "../shared/naming";
+import {
+	errorMessage,
+	generatedFileHeader,
+	isPathInside,
+	normalizePath,
+	resolvePathInside,
+	scanFiles,
+	writeFileIfChanged,
+} from "../shared/fileSystem";
+import { compareStrings, isValidBindingIdentifier, toJavaScriptStringLiteral, toPascalCase } from "../shared/naming";
 import { createDebouncedTask, onServerClose } from "../shared/plugin";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 import type { ParsedSvg, ScannedSvgIcon, SvgAttributeValue, SvgIconNameContext, SvgIconsPluginOptions } from "./type";
@@ -20,6 +28,14 @@ interface ResolvedOptions {
 	output: string;
 	removeDimensions: boolean;
 }
+
+interface SvgIconOutput {
+	filePath: string;
+	icon: ScannedSvgIcon;
+	modulePath: string;
+}
+
+const GENERATED_LINE_WIDTH = 150;
 
 /**
  * 将完整 SVG 文本拆成根属性与内部标记。
@@ -97,44 +113,217 @@ async function scanSvgIcons(root: string, options: SvgIconsPluginOptions = {}): 
 }
 
 /**
- * 将扫描结果渲染为单个 Vue 组件模块。
+ * 计算每个 SVG 图标对应的独立组件模块路径。
  *
- * 生成代码依赖消费项目中的 `vue`，不会要求 JSX 转换器。SVG 内部标记通过 `innerHTML`
- * 写入，因此扫描目录只能包含受信任的仓库资源。
- *
+ * @param outputFile - 根索引文件的绝对路径。
  * @param icons - 已完成命名、解析并按名称排序的 SVG 图标。
- * @returns 可写入 TypeScript 文件的 Vue 图标模块源码。
+ * @returns 每个图标的模块导入路径与 `index.tsx` 输出路径。
+ * @throws 不同 SVG 路径在跨平台模块解析时发生冲突时抛出异常。
  */
-function renderSvgIconModule(icons: readonly ScannedSvgIcon[]): string {
-	const lines = [
-		"/* eslint-disable */",
-		"/* prettier-ignore */",
-		"// 此文件由 fast-vite-plugins 自动生成，请勿手动编辑。",
-		'import { defineComponent, h } from "vue";',
-		"",
-	];
-
-	for (const icon of icons) {
-		lines.push(`const ${icon.name}Attributes = ${JSON.stringify(icon.attributes)};`);
-		lines.push(`const ${icon.name}Content = ${JSON.stringify(icon.content)};`);
-		lines.push(`export const ${icon.name} = defineComponent({`);
-		lines.push(`\tname: ${JSON.stringify(icon.name)},`);
-		lines.push("\tinheritAttrs: false,");
-		lines.push("\tsetup(_props, { attrs }) {");
-		lines.push(`\t\treturn () => h("svg", { ...${icon.name}Attributes, ...attrs, innerHTML: ${icon.name}Content });`);
-		lines.push("\t},");
-		lines.push("});", "");
+function resolveSvgIconOutputs(outputFile: string, icons: readonly ScannedSvgIcon[]): SvgIconOutput[] {
+	const outputDirectory = path.dirname(outputFile);
+	const outputs = icons.map((icon) => {
+		const relativeName = normalizePath(icon.relativePath.slice(0, -path.extname(icon.relativePath).length));
+		const modulePath = `./${relativeName}/index`;
+		const filePath = path.resolve(outputDirectory, relativeName, "index.tsx");
+		if (!isPathInside(outputDirectory, filePath)) {
+			throw new Error(`[fast-vite:svg-icons] 图标组件输出路径越出索引目录：${icon.relativePath}`);
+		}
+		return { filePath, icon, modulePath };
+	});
+	const modulePaths = new Map<string, SvgIconOutput>();
+	for (const output of outputs) {
+		const key = output.modulePath.toLowerCase();
+		const previous = modulePaths.get(key);
+		if (previous) {
+			throw new Error(`[fast-vite:svg-icons] 图标模块路径冲突：${previous.icon.relativePath} 与 ${output.icon.relativePath}`);
+		}
+		modulePaths.set(key, output);
 	}
+	return outputs;
+}
 
-	lines.push(`export const icons = { ${icons.map((icon) => icon.name).join(", ")} } as const;`);
-	lines.push("export default icons;", "");
-	return `${lines.join("\n")}\n`;
+/** 渲染单个 SVG 图标的独立 Vue TSX 组件模块。 */
+function renderSvgIconComponent(icon: ScannedSvgIcon): string {
+	const lines = [
+		'import { defineComponent } from "vue";',
+		"",
+		"/**",
+		` * ${icon.name} 图标组件。`,
+		" */",
+		`export const ${icon.name} = defineComponent({`,
+		`\tname: ${toJavaScriptStringLiteral(icon.name)},`,
+		"\trender() {",
+		"\t\treturn (",
+		...renderSvgElementStart("svg", renderRootSvgAttributes(icon.attributes), false, 3),
+		...renderSvgContent(icon.content, 4),
+		"\t\t\t</svg>",
+		"\t\t);",
+		"\t},",
+		"});",
+		"",
+		`export default ${icon.name};`,
+	];
+	return `${generatedFileHeader("svgIcons")}${lines.join("\n")}\n`;
+}
+
+function renderRootSvgAttributes(attributes: Readonly<Record<string, SvgAttributeValue>>): string[] {
+	const priority = new Map([
+		["xmlns", 0],
+		["viewBox", 1],
+		["width", 2],
+		["height", 3],
+	]);
+	return Object.entries(attributes)
+		.map(([name, value], index) => ({ index, name, value }))
+		.sort((left, right) => (priority.get(left.name) ?? 4) - (priority.get(right.name) ?? 4) || left.index - right.index)
+		.map(({ name, value }) => renderRootSvgAttribute(name, value));
+}
+
+function renderRootSvgAttribute(name: string, value: SvgAttributeValue): string {
+	if (value === true) return name;
+	if (typeof value !== "string") return `${name}={${JSON.stringify(value)}}`;
+	if (!/["&<>\r\n]/u.test(value)) return `${name}="${value}"`;
+	return `${name}={${toJavaScriptStringLiteral(value)}}`;
+}
+
+function renderSvgContent(content: string, initialDepth: number): string[] {
+	const lines: string[] = [];
+	let depth = initialDepth;
+	for (const token of tokenizeSvgContent(content)) {
+		if (token.startsWith("<!--")) continue;
+		if (token.startsWith("</")) depth = Math.max(initialDepth, depth - 1);
+
+		if (token.startsWith("<")) {
+			lines.push(...renderSvgTag(token, depth));
+		} else {
+			lines.push(`${"\t".repeat(depth)}{${toJavaScriptStringLiteral(token)}}`);
+		}
+
+		if (token.startsWith("<") && !token.startsWith("</") && !token.startsWith("<!") && !token.startsWith("<?") && !token.endsWith("/>")) {
+			depth += 1;
+		}
+	}
+	return lines;
+}
+
+function tokenizeSvgContent(content: string): string[] {
+	const tokens: string[] = [];
+	let index = 0;
+	while (index < content.length) {
+		const tagStart = content.indexOf("<", index);
+		if (tagStart < 0) {
+			const text = content.slice(index).trim();
+			if (text) tokens.push(text);
+			break;
+		}
+
+		const text = content.slice(index, tagStart).trim();
+		if (text) tokens.push(text);
+		if (content.startsWith("<!--", tagStart)) {
+			const commentEnd = content.indexOf("-->", tagStart + 4);
+			if (commentEnd < 0) throw new Error("[fast-vite:svg-icons] SVG 注释未闭合。");
+			tokens.push(content.slice(tagStart, commentEnd + 3));
+			index = commentEnd + 3;
+			continue;
+		}
+
+		let quote: "'" | '"' | undefined;
+		let tagEnd = -1;
+		for (let cursor = tagStart + 1; cursor < content.length; cursor += 1) {
+			const character = content[cursor];
+			if (quote) {
+				if (character === quote) quote = undefined;
+				continue;
+			}
+			if (character === "'" || character === '"') quote = character;
+			else if (character === ">") {
+				tagEnd = cursor;
+				break;
+			}
+		}
+		if (tagEnd < 0) throw new Error("[fast-vite:svg-icons] SVG 标签未闭合。");
+		tokens.push(content.slice(tagStart, tagEnd + 1).trim());
+		index = tagEnd + 1;
+	}
+	return tokens;
+}
+
+function renderSvgTag(tag: string, depth: number): string[] {
+	if (tag.startsWith("<!") || tag.startsWith("<?")) {
+		throw new Error(`[fast-vite:svg-icons] SVG 内部包含不支持的声明：${tag}`);
+	}
+	if (tag.startsWith("</")) return [`${"\t".repeat(depth)}${tag}`];
+
+	const selfClosing = tag.endsWith("/>");
+	const body = tag.slice(1, selfClosing ? -2 : -1).trim();
+	const whitespaceIndex = body.search(/\s/u);
+	const name = whitespaceIndex < 0 ? body : body.slice(0, whitespaceIndex);
+	if (!name || name.includes("/")) throw new Error(`[fast-vite:svg-icons] 无法解析 SVG 标签：${tag}`);
+	const attributes = splitSvgAttributes(whitespaceIndex < 0 ? "" : body.slice(whitespaceIndex + 1));
+	return renderSvgElementStart(name, attributes, selfClosing, depth);
+}
+
+function splitSvgAttributes(source: string): string[] {
+	const attributes: string[] = [];
+	let index = 0;
+	while (index < source.length) {
+		while (/\s/u.test(source[index] ?? "")) index += 1;
+		if (index >= source.length) break;
+
+		const start = index;
+		let quote: "'" | '"' | undefined;
+		while (index < source.length) {
+			const character = source[index];
+			if (quote) {
+				if (character === quote) quote = undefined;
+				index += 1;
+				continue;
+			}
+			if (character === "'" || character === '"') quote = character;
+			else if (/\s/u.test(character ?? "")) break;
+			index += 1;
+		}
+		if (quote) throw new Error(`[fast-vite:svg-icons] SVG 属性引号未闭合：${source.slice(start)}`);
+		attributes.push(source.slice(start, index));
+	}
+	return attributes;
+}
+
+function renderSvgElementStart(name: string, attributes: readonly string[], selfClosing: boolean, depth: number): string[] {
+	const indentation = "\t".repeat(depth);
+	const ending = selfClosing ? " />" : ">";
+	const singleLine = `${indentation}<${name}${attributes.length > 0 ? ` ${attributes.join(" ")}` : ""}${ending}`;
+	if (singleLine.replaceAll("\t", "    ").length <= GENERATED_LINE_WIDTH) return [singleLine];
+
+	return [`${indentation}<${name}`, ...attributes.map((attribute) => `${indentation}\t${attribute}`), `${indentation}${selfClosing ? "/>" : ">"}`];
+}
+
+/** 渲染图标根索引，提供命名导出与直接默认导出的只读组件对象。 */
+function renderSvgIconIndex(outputs: readonly SvgIconOutput[]): string {
+	const lines: string[] = [];
+	const imports = [...outputs].sort((left, right) => {
+		const insensitiveOrder = compareStrings(left.modulePath.toLowerCase(), right.modulePath.toLowerCase());
+		return insensitiveOrder || compareStrings(left.modulePath, right.modulePath);
+	});
+	for (const output of imports) lines.push(`import ${output.icon.name} from ${toJavaScriptStringLiteral(output.modulePath)};`);
+	if (imports.length > 0) lines.push("");
+
+	const names = outputs.map(({ icon }) => icon.name);
+	if (names.length === 0) {
+		lines.push("export default {} as const;");
+	} else {
+		lines.push(`export { ${names.join(", ")} };`, "", "export default {");
+		for (const name of names) lines.push(`\t${name},`);
+		lines.push("} as const;");
+	}
+	return `${generatedFileHeader("svgIcons")}${lines.join("\n")}\n`;
 }
 
 /**
- * 将 SVG 目录编译为一个类型安全的 Vue 图标组件模块。
+ * 将 SVG 目录编译为独立的 Vue 图标组件与根索引。
  *
- * 生成组件通过 `h("svg")` 直接渲染 SVG，不要求消费项目安装 JSX 插件。
+ * 生成组件通过 `defineComponent` 与内联 SVG JSX 渲染，消费项目需要启用 Vue JSX/TSX 转换。
  *
  * @param options - SVG 目录、输出文件、命名、过滤和根属性配置。
  * @returns 可直接加入 Vite `plugins` 的 SVG 图标生成插件。
@@ -145,8 +334,11 @@ export function svgIcons(options: SvgIconsPluginOptions = {}): Plugin {
 	let config: ResolvedConfig;
 
 	const generate = async (): Promise<void> => {
+		const outputFile = resolvePathInside(config.root, resolved.output, "svg-icons");
 		const icons = await scanSvgIcons(config.root, options);
-		await writeFileIfChanged(resolvePathInside(config.root, resolved.output, "svg-icons"), renderSvgIconModule(icons));
+		const outputs = resolveSvgIconOutputs(outputFile, icons);
+		for (const output of outputs) await writeFileIfChanged(output.filePath, renderSvgIconComponent(output.icon));
+		await writeFileIfChanged(outputFile, renderSvgIconIndex(outputs));
 	};
 
 	return {

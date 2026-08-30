@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import {
 	errorMessage,
+	generatedFileHeader,
 	hasExtension,
 	isPathInside,
 	normalizeExtensions,
@@ -11,7 +12,7 @@ import {
 	scanFiles,
 	writeFileIfChanged,
 } from "../shared/fileSystem";
-import { compareStrings, isValidBindingIdentifier, toPascalCase } from "../shared/naming";
+import { compareStrings, isValidBindingIdentifier, toJavaScriptStringLiteral, toPascalCase } from "../shared/naming";
 import { createDebouncedTask, onServerClose } from "../shared/plugin";
 import type { Plugin, ResolvedConfig, ViteDevServer } from "vite";
 import type { ComponentNameContext, ComponentRegistryPluginOptions, ScannedComponent } from "./type";
@@ -40,15 +41,7 @@ interface ScriptBlock {
 	source: string;
 }
 
-/**
- * 检查组件源码中可静态确定的运行时名称。
- *
- * 无法确认名称配置方式时返回 `unknown`，避免对包装组件或自定义编译宏误报。
- *
- * @param source - 组件源码。
- * @param extension - 包含点号的组件文件扩展名。
- * @returns 名称检查结果。
- */
+/** 静态检查组件源码中能够明确识别的运行时 `name`。 */
 function inspectComponentName(source: string, extension: string): ComponentNameInspection {
 	if (extension === ".vue") {
 		const scripts = extractScriptBlocks(source);
@@ -342,11 +335,8 @@ async function scanComponents(
 				throw new Error(`[fast-vite:component-registry] 组件名称 ${JSON.stringify(name)} 不能作为生成代码绑定名：${relativePath}`);
 			}
 			const source = await readFile(absolutePath, "utf8");
-			const nameInspection = inspectComponentName(source, extension.toLowerCase());
-			if (nameInspection === "missing") {
-				onWarning(
-					`[fast-vite:component-registry] 组件未显式配置 name；registerComponents 将回退使用 ${JSON.stringify(name)}：${relativePath}`
-				);
+			if (inspectComponentName(source, extension.toLowerCase()) === "missing") {
+				onWarning(`[fast-vite:component-registry] 组件未显式配置运行时 name，将按已配置 name 继续生成注册代码：${relativePath}`);
 			}
 
 			const component: ScannedComponent = { ...context, name };
@@ -365,37 +355,39 @@ async function scanComponents(
 }
 
 /**
- * 生成组件导出、可用的实例类型、只读注册表与 `registerComponents` 辅助函数源码。
+ * 生成组件、实例类型与全局注册方法源码。
  *
  * @param outputFile - 生成文件的绝对路径，用于计算稳定的相对导入路径。
  * @param components - 已扫描并完成名称校验的组件描述。
- * @returns 包含命名导出、实例类型、只读注册表和批量注册函数的 TypeScript 源码。
+ * @returns 包含命名导出、实例类型和 `registerComponents` 的 TypeScript 源码。
  */
 function renderComponentRegistry(outputFile: string, components: readonly ScannedComponent[]): string {
-	const lines = ["/* eslint-disable */", "/* prettier-ignore */", "// 此文件由 fast-vite-plugins 自动生成，请勿手动编辑。"];
-
+	const lines: string[] = [];
 	const componentImports = components
 		.map((component) => ({ component, importPath: relativeImportPath(outputFile, component.absolutePath) }))
 		.sort((left, right) => {
 			const insensitiveOrder = compareStrings(left.importPath.toLowerCase(), right.importPath.toLowerCase());
 			return insensitiveOrder || compareStrings(left.importPath, right.importPath);
 		});
+
 	for (const { component, importPath } of componentImports) {
-		lines.push(`import ${component.name} from ${JSON.stringify(importPath)};`);
+		lines.push(`import ${component.name} from ${toJavaScriptStringLiteral(importPath)};`);
 	}
 	lines.push('import type { App } from "vue";', "");
+
 	for (const component of components) {
 		lines.push(`export { ${component.name} };`);
 		lines.push(`export type ${component.name}Instance = InstanceType<typeof ${component.name}>;`);
 	}
+	if (components.length > 0) lines.push("");
 
-	lines.push("", `export const components = { ${components.map((component) => component.name).join(", ")} } as const;`, "");
 	lines.push("/** 将扫描到的组件注册为 Vue 全局组件。 */", "export function registerComponents(app: App): void {");
 	for (const component of components) {
-		lines.push(`\tapp.component(${component.name}.name ?? ${JSON.stringify(component.name)}, ${component.name});`);
+		lines.push(`\tapp.component(${component.name}.name, ${component.name});`);
 	}
-	lines.push("}", "");
-	return `${lines.join("\n")}\n`;
+	lines.push("}");
+
+	return `${generatedFileHeader("componentRegistry")}${lines.join("\n")}\n`;
 }
 
 /**
@@ -406,27 +398,20 @@ function renderComponentRegistry(outputFile: string, components: readonly Scanne
  * @returns 可供 Vue 模板类型检查读取的模块增强声明源码。
  */
 function renderComponentDeclarations(dtsFile: string, components: readonly ScannedComponent[]): string {
-	const lines = [
-		"/* eslint-disable */",
-		"// 此文件由 fast-vite-plugins 自动生成，请勿手动编辑。",
-		"export {};",
-		"",
-		'declare module "vue" {',
-		"\texport interface GlobalComponents {",
-	];
+	const lines = ["export {};", "", 'declare module "vue" {', "\texport interface GlobalComponents {"];
 	for (const component of components) {
 		const importPath = relativeImportPath(dtsFile, component.absolutePath);
-		lines.push(`\t\t${component.name}: (typeof import(${JSON.stringify(importPath)}))["default"];`);
+		lines.push(`\t\t${component.name}: (typeof import(${toJavaScriptStringLiteral(importPath)}))["default"];`);
 	}
 	lines.push("\t}", "}", "");
-	return `${lines.join("\n")}\n`;
+	return `${generatedFileHeader("componentRegistry")}${lines.join("\n")}\n`;
 }
 
 /**
- * 扫描 Vue/TSX/JSX 组件，并生成可按需导入、实例类型、批量注册的入口文件和全局组件类型。
+ * 扫描 Vue/TSX/JSX 组件，并生成命名导出、实例类型、全局注册方法和全局组件类型。
  *
  * @param options - 扫描目录、输出文件、过滤、命名和冲突策略。
- * @returns 可直接加入 Vite `plugins` 的组件注册表生成插件。
+ * @returns 可直接加入 Vite `plugins` 的组件入口生成插件。
  * @throws 目录、扩展名、输出路径、绑定名或冲突策略无效时抛出异常。
  */
 export function componentRegistry(options: ComponentRegistryPluginOptions = {}): Plugin {

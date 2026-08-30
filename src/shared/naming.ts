@@ -11,6 +11,30 @@ export function compareStrings(left: string, right: string): number {
 }
 
 /**
+ * 生成稳定且符合 Prettier 引号选择规则的 JavaScript 字符串字面量。
+ *
+ * @param value - 要写入生成源码的字符串。
+ * @returns 已转义并包含引号的 JavaScript 字符串字面量。
+ */
+export function toJavaScriptStringLiteral(value: string): string {
+	const doubleQuotes = value.split('"').length - 1;
+	const singleQuotes = value.split("'").length - 1;
+	const quote = doubleQuotes > singleQuotes ? "'" : '"';
+	let content = "";
+
+	for (const character of value) {
+		if (character === "\\") content += "\\\\";
+		else if (character === quote) content += `\\${quote}`;
+		else if (character === "\u2028") content += "\\u2028";
+		else if (character === "\u2029") content += "\\u2029";
+		else if (character.charCodeAt(0) < 0x20) content += JSON.stringify(character).slice(1, -1);
+		else content += character;
+	}
+
+	return `${quote}${content}${quote}`;
+}
+
+/**
  * 将文件名、路径片段或 kebab-case 名称转换为合法的 PascalCase 标识符。
  *
  * @param value - 文件名、路径片段或自由格式名称。

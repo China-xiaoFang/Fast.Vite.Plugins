@@ -8,9 +8,9 @@ export interface ComponentNameContext {
 	defaultName: string;
 }
 
-/** 扫描后用于生成注册文件与类型声明的组件信息。 */
+/** 扫描后用于生成组件入口与类型声明的组件信息。 */
 export interface ScannedComponent extends ComponentNameContext {
-	/** 最终使用的 JavaScript 标识符和注册表键名。 */
+	/** 最终使用的 JavaScript 导出标识符。 */
 	name: string;
 }
 
@@ -18,7 +18,7 @@ export interface ScannedComponent extends ComponentNameContext {
 export interface ComponentRegistryPluginOptions {
 	/** 要扫描的组件目录，相对于 Vite `root`；可以配置多个。 @defaultValue `"src/components"` */
 	dirs?: string | readonly string[];
-	/** 生成的组件导出与注册文件；设为 `false` 可关闭。 @defaultValue `"src/components/index.ts"` */
+	/** 生成的组件、实例类型与全局注册方法入口；设为 `false` 可关闭。 @defaultValue `"src/components/index.ts"` */
 	output?: false | string;
 	/** 生成的 Vue 全局组件类型声明；设为 `false` 可关闭。 @defaultValue `"types/components.d.ts"` */
 	dts?: false | string;
@@ -28,7 +28,7 @@ export interface ComponentRegistryPluginOptions {
 	extensions?: readonly string[];
 	/** 返回 `false` 可排除指定组件。 */
 	include?: (context: ComponentNameContext) => boolean;
-	/** 自定义导出标识符、注册表键名和运行时名称为空时的注册名称。返回值必须是合法的 JavaScript 标识符。 */
+	/** 自定义导出标识符；返回值必须是合法的 JavaScript 标识符。 */
 	name?: (context: ComponentNameContext) => string;
 	/** 重名组件的处理方式。 @defaultValue `"error"` */
 	conflict?: "error" | "overwrite" | "warn";
