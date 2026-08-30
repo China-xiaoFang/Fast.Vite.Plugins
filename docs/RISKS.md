@@ -8,7 +8,7 @@ These plugins run with the build process's file and network trust. Review every 
 
 ## SVG and raw HTML
 
-`svgIcons` renders SVG internals through Vue `innerHTML`; only scan reviewed repository SVG files. `htmlTemplate({ escape: false })` must receive trusted static content, never user-controlled values.
+`svgIcons` writes SVG markup directly into generated TSX source; only scan reviewed repository SVG files. `htmlTemplate({ escape: false })` must receive trusted static content, never user-controlled values.
 
 ## Build metadata
 

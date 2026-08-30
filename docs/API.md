@@ -1,6 +1,6 @@
 # API reference
 
-This document covers `fast-vite-plugins@2.0.10`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
+This document covers `fast-vite-plugins@2.0.11`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
 
 ## Entry points and errors
 
@@ -12,7 +12,7 @@ Import each plugin function directly and list it in Vite's `plugins` array. No p
 
 ## `componentRegistry(options?)`
 
-Scans Vue/TSX/JSX files and generates named exports, a read-only registry, `registerComponents(app)`, and Vue `GlobalComponents` declarations.
+Scans Vue/TSX/JSX files and generates named exports, instance types, `registerComponents(app)`, and Vue `GlobalComponents` declarations.
 
 ```ts
 componentRegistry({
@@ -23,9 +23,11 @@ componentRegistry({
 });
 ```
 
-Defaults: `dirs: "src/components"`, `output: "src/components/index.ts"`, `dts: "types/components.d.ts"`, recursive scanning, `vue/tsx/jsx`, conflict errors, and an 80 ms watcher debounce. The `name` callback customizes the generated binding, registry key, and fallback registration name. `registerComponents(app)` prefers each component's runtime `name` and falls back when it is nullish through `app.component(Component.name ?? "GeneratedName", Component)`. A statically detectable missing explicit name produces a build warning containing that fallback, while inconclusive wrappers or custom macros are left alone.
+Defaults: `dirs: "src/components"`, `output: "src/components/index.ts"`, `dts: "types/components.d.ts"`, recursive scanning, `vue/tsx/jsx`, conflict errors, and an 80 ms watcher debounce. The `name` callback customizes the generated export binding.
 
 The generated module exports `NameInstance = InstanceType<typeof Name>` for every scanned component. An `index.vue` file uses its parent folder name. Generated names must be unique ECMAScript identifiers.
+
+`registerComponents(app)` directly calls `app.component(Component.name, Component)` without a fallback, runtime guard, or warning inside the registration method. When the plugin can statically confirm that a runtime `name` is missing, it warns during generation but still emits the component; inconclusive source is treated as named.
 
 ## `routerMeta(options?)`
 
@@ -35,7 +37,7 @@ Defaults: `dir: "src/views"`, `output: "src/router/routes.generated.json"`, recu
 
 ## `svgIcons(options?)`
 
-Generates one Vue module from an SVG folder without requiring JSX support.
+Generates independent Vue TSX components and a root index from an SVG folder. Each SVG is written to `<SVG relative path>/index.tsx` below the root index directory and rendered with `defineComponent` plus inline SVG JSX, so the consuming project must enable Vue JSX/TSX transformation.
 
 ```ts
 svgIcons({
@@ -46,7 +48,9 @@ svgIcons({
 });
 ```
 
-SVG internals are assigned through `innerHTML`; only scan trusted repository assets.
+SVG markup is written directly into generated TSX source; only scan trusted repository assets.
+
+The root index provides named exports and directly default-exports a read-only component object through `export default { ... } as const`, without an intermediate `icons` variable.
 
 ## `cdnImport(options)`
 

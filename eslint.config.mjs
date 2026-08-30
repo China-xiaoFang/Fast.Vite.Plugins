@@ -483,10 +483,10 @@ export default defineConfig(
 						"index",
 						// TypeScript import = require() 导入
 						"object",
-						// TypeScript 类型导入
-						"type",
 						// 无法识别分类的导入
 						"unknown",
+						// TypeScript 类型导入始终位于所有非样式导入之后
+						"type",
 					],
 					// 常用平台、框架和工具依赖优先于其他第三方依赖，并按声明顺序分层排序
 					pathGroups: [
@@ -502,6 +502,8 @@ export default defineConfig(
 						{ pattern: "@fast-china/**", group: "external", position: "before" },
 						// Lodash、lodash-es、lodash-unified 及其子路径
 						{ pattern: "lodash{,-es,-unified}{,/**}", group: "external", position: "before" },
+						// 项目根目录 @/ 别名归入 internal，并优先于其他 internal 导入
+						{ pattern: "@/**", group: "internal", position: "before" },
 					],
 					// 类型导入不参与自定义 pathGroups 匹配，统一保留在 type 总分组
 					pathGroupsExcludedImportTypes: ["type"],

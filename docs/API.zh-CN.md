@@ -1,6 +1,6 @@
 # API 参考
 
-本文档对应 `fast-vite-plugins@2.0.10`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
+本文档对应 `fast-vite-plugins@2.0.11`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
 
 ## 入口与异常契约
 
@@ -12,7 +12,7 @@
 
 ## `componentRegistry(options?)`
 
-扫描 `.vue`、`.tsx`、`.jsx` 组件，生成命名导出、批量注册模块与 Vue 全局组件声明。
+扫描 `.vue`、`.tsx`、`.jsx` 组件，生成命名导出、实例类型、全局注册方法与 Vue 全局组件声明。
 
 ```ts
 componentRegistry({
@@ -23,21 +23,21 @@ componentRegistry({
 });
 ```
 
-| 选项         | 类型                               | 默认值                      | 说明                         |
-| ------------ | ---------------------------------- | --------------------------- | ---------------------------- |
-| `dirs`       | `string \| readonly string[]`      | `"src/components"`          | 扫描目录                     |
-| `output`     | `string \| false`                  | `"src/components/index.ts"` | 组件入口；`false` 关闭       |
-| `dts`        | `string \| false`                  | `"types/components.d.ts"`   | 全局类型；`false` 关闭       |
-| `deep`       | `boolean`                          | `true`                      | 是否递归扫描                 |
-| `extensions` | `readonly string[]`                | `vue, tsx, jsx`             | 可带或不带点号的扩展名       |
-| `include`    | `(context) => boolean`             | -                           | 返回 `false` 排除文件        |
-| `name`       | `(context) => string`              | -                           | 自定义导出、注册表和回退名称 |
-| `conflict`   | `"error" \| "warn" \| "overwrite"` | `"error"`                   | 重名策略                     |
-| `debounce`   | `number`                           | `80`                        | 开发监听防抖毫秒数           |
-
-`registerComponents(app)` 通过 `app.component(Component.name ?? "GeneratedName", Component)` 优先使用组件自身的运行时 `name`，为 `null` 或 `undefined` 时回退到生成名称。能够静态确认组件未显式配置 `name` 时会输出包含回退名称的构建警告；无法可靠判断包装组件或自定义宏时不告警。`name` 回调同时控制导出标识符、注册表键名和回退注册名称。
+| 选项         | 类型                               | 默认值                      | 说明                   |
+| ------------ | ---------------------------------- | --------------------------- | ---------------------- |
+| `dirs`       | `string \| readonly string[]`      | `"src/components"`          | 扫描目录               |
+| `output`     | `string \| false`                  | `"src/components/index.ts"` | 组件入口；`false` 关闭 |
+| `dts`        | `string \| false`                  | `"types/components.d.ts"`   | 全局类型；`false` 关闭 |
+| `deep`       | `boolean`                          | `true`                      | 是否递归扫描           |
+| `extensions` | `readonly string[]`                | `vue, tsx, jsx`             | 可带或不带点号的扩展名 |
+| `include`    | `(context) => boolean`             | -                           | 返回 `false` 排除文件  |
+| `name`       | `(context) => string`              | -                           | 自定义导出标识符       |
+| `conflict`   | `"error" \| "warn" \| "overwrite"` | `"error"`                   | 重名策略               |
+| `debounce`   | `number`                           | `80`                        | 开发监听防抖毫秒数     |
 
 生成模块默认为每个扫描到的组件导出 `组件名Instance = InstanceType<typeof 组件名>` 实例类型。
+
+`registerComponents(app)` 直接调用 `app.component(Component.name, Component)`，不会生成回退注册名称，也不会在注册方法中检查或警告。插件能够静态确认组件未声明运行时 `name` 时会在生成阶段警告，但仍保留组件并继续生成；无法可靠判断时默认按已声明处理。
 
 `index.vue` 默认使用父目录名称。生成名称必须是唯一且合法的 ECMAScript 标识符。`output` 和 `dts` 不能同时关闭。
 
@@ -69,7 +69,7 @@ routerMeta({
 
 ## `svgIcons(options?)`
 
-把 SVG 目录编译为单个 Vue 组件模块。组件通过 `h("svg")` 渲染，不要求 JSX 插件。
+把 SVG 目录编译为独立 Vue TSX 组件及根索引。每个 SVG 生成到根索引所在目录的 `<SVG 相对路径>/index.tsx`，组件使用 `defineComponent` 和内联 SVG JSX，消费项目必须启用 Vue JSX/TSX 转换。
 
 ```ts
 svgIcons({
@@ -85,7 +85,7 @@ svgIcons({
 | 选项                | 默认值                 | 说明                            |
 | ------------------- | ---------------------- | ------------------------------- |
 | `dir`               | `"src/assets/icons"`   | SVG 源目录                      |
-| `output`            | `"src/icons/index.ts"` | 单文件输出                      |
+| `output`            | `"src/icons/index.ts"` | 图标根索引                      |
 | `deep`              | `true`                 | 是否递归                        |
 | `componentPrefix`   | `""`                   | 组件名前缀                      |
 | `componentSuffix`   | `"Icon"`               | 组件名后缀                      |
@@ -94,7 +94,9 @@ svgIcons({
 | `removeDimensions`  | `false`                | 删除 `width` / `height`         |
 | `debounce`          | `80`                   | 开发监听防抖毫秒数              |
 
-SVG 内部标记会通过 `innerHTML` 写入。不要把用户上传或其他不可信 SVG 放入扫描目录。
+SVG 标记会直接写入生成的 TSX 源码。不要把用户上传或其他不可信 SVG 放入扫描目录。
+
+根索引提供每个图标的命名导出，并通过 `export default { ... } as const` 直接默认导出只读组件对象，不生成中间 `icons` 变量。
 
 ## `cdnImport(options)`
 

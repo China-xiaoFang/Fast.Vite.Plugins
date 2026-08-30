@@ -13,6 +13,16 @@ export function normalizePath(filePath: string): string {
 }
 
 /**
+ * 生成统一的 TypeScript 文件头，标明负责生成该文件的公开插件方法。
+ *
+ * @param method - 生成文件的插件方法名。
+ * @returns 以空行结尾的中文 `@generated` 文件头。
+ */
+export function generatedFileHeader(method: string): string {
+	return `/**\n * @generated 由 fast-vite-plugins 的 \`${method}\` 方法自动生成。\n *\n * 请勿手动编辑，重新运行生成器时所有修改都会被覆盖。\n */\n\n`;
+}
+
+/**
  * 规范化扩展名，调用方既可以传入 `vue`，也可以传入 `.vue`。
  *
  * @param extensions - 允许的文件扩展名。
