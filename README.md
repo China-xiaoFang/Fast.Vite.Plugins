@@ -116,6 +116,8 @@ cdnImport({
 
 The plugin supports default and named imports, named re-exports, `export * as name`, and static-string dynamic imports. Plain `export * from "module"` fails explicitly because a browser global cannot be enumerated safely at build time.
 
+With `dev: true`, the development server injects CDN tags and transforms JavaScript module references while skipping inline HTML styles and other CSS requests.
+
 ### Build information
 
 ```ts

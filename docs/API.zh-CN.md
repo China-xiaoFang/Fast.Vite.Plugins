@@ -1,6 +1,6 @@
 # API 参考
 
-本文档对应 `fast-vite-plugins@2.0.12`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
+本文档对应 `fast-vite-plugins@2.0.13`。包为 ESM-only；所有相对路径默认以 Vite `root` 为基准。生成器采用稳定排序、内容未变化时不写入，并拒绝将输出写到项目根目录之外。
 
 ## 入口与异常契约
 
@@ -143,6 +143,8 @@ cdnImport({
 | `scriptAttributes` / `styleAttributes` | 合并到标签的额外属性                   |
 
 支持默认导入、命名导入、命名重导出、`export * as name` 和静态字符串动态导入。普通 `export * from` 会报错，因为无法安全地把动态全局对象枚举成静态 ESM 导出。
+
+启用 `dev: true` 后，开发服务器会继续注入 CDN 标签并转换 JavaScript 模块引用；HTML 内联样式及其他 CSS 请求不会参与 JavaScript AST 转换。
 
 ## `buildInfo(options?)`
 

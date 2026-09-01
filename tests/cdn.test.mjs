@@ -87,6 +87,28 @@ test("CDN transformation uses AST boundaries and returns a composable source map
 	assert.deepEqual(result.map.sourcesContent, [code]);
 });
 
+test("CDN transformation ignores Vite HTML proxy CSS requests in development", async () => {
+	const plugin = cdnImport({
+		dev: true,
+		modules: { name: "vue", global: "Vue", version: "3.5.0", js: "vue.js" },
+	});
+	plugin.config({}, { command: "serve", mode: "development" });
+	await plugin.configResolved({ command: "serve", root: process.cwd() });
+
+	const result = plugin.transform.call(
+		{
+			parse() {
+				throw new Error("CSS must not be parsed as JavaScript");
+			},
+		},
+		":root { color-scheme: light; }",
+		"/index.html?html-proxy&direct&index=0.css",
+		{}
+	);
+
+	assert.equal(result, undefined);
+});
+
 test("CDN module names use own properties and generated bindings avoid user code", async () => {
 	const plugin = await configure({ modules: { name: "constructor", global: "Vue", version: "1.0.0", js: "vue.js" } });
 	const code = 'const __fast_cdn_export_0_0 = "user";\nexport { ref as value } from "constructor";';
