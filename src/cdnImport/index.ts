@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { type ConfigEnv, type HtmlTagDescriptor, type Plugin, type ResolvedConfig, isCSSRequest } from "vite";
 import { isValidIdentifier } from "../shared/naming";
-import type { ConfigEnv, HtmlTagDescriptor, Plugin, ResolvedConfig } from "vite";
 import type { CdnImportPluginOptions, CdnModule, CdnModuleResolver, CdnModuleResolverContext, ResolvedCdnModule } from "./type";
 
 export type { CdnImportPluginOptions, CdnModule, CdnModuleResolver, CdnModuleResolverContext, CdnTagAttributes } from "./type";
@@ -194,6 +194,7 @@ export function cdnImport(options: CdnImportPluginOptions): Plugin {
 		transform(code, id, transformOptions): ReturnType<typeof transformCdnImports> {
 			if (transformOptions?.ssr && options.ssr !== true) return undefined;
 			if (config.command === "serve" && options.dev !== true) return undefined;
+			if (isCSSRequest(id)) return undefined;
 			return transformCdnImports(code, externalMap, this.parse(code), id);
 		},
 		transformIndexHtml(): HtmlTagDescriptor[] {

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import path from "node:path";
 import { test } from "node:test";
 import { gunzipSync } from "node:zlib";
-import { build } from "vite";
+import { build, createServer } from "vite";
 import { buildInfo, cdnImport, compression, htmlTemplate, staticCopy, subresourceIntegrity, virtualModules } from "../dist/index.mjs";
 
 test("plugins cooperate in a real Vite build", async () => {
@@ -86,4 +86,29 @@ test("CDN transformation stays disabled for SSR unless explicitly enabled", asyn
 	const chunk = result.output.find((item) => item.type === "chunk" && item.isEntry);
 	assert.match(chunk.code, /from ["']external-library["']/);
 	assert.doesNotMatch(chunk.code, /globalThis\["ExternalLibrary"\]/);
+});
+
+test("CDN development mode supports inline HTML styles", async () => {
+	const server = await createServer({
+		root: path.resolve("tests/fixtures/integration"),
+		logLevel: "silent",
+		plugins: [
+			cdnImport({
+				dev: true,
+				modules: { name: "external-library", global: "ExternalLibrary", version: "1.0.0", js: "dist/index.min.js" },
+			}),
+		],
+		server: { middlewareMode: true },
+	});
+
+	try {
+		const html = await server.transformIndexHtml(
+			"/index.html",
+			"<!doctype html><html><head><style>:root { color-scheme: light; }</style></head><body></body></html>"
+		);
+		assert.match(html, /external-library@1\.0\.0/);
+		assert.match(html, /:root \{ color-scheme: light; \}/);
+	} finally {
+		await server.close();
+	}
 });

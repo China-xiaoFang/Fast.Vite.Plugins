@@ -1,6 +1,6 @@
 # API reference
 
-This document covers `fast-vite-plugins@2.0.12`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
+This document covers `fast-vite-plugins@2.0.13`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
 
 ## Entry points and errors
 
@@ -68,6 +68,8 @@ cdnImport({
 ```
 
 `modules` accepts one module, an ordered array, or environment-aware resolvers. Each module configures `name`, `global`, `version`, `js`, optional `css`, aliases, per-module URL templates, and tag attributes. The plugin supports default/named imports, named re-exports, `export * as name`, and static dynamic imports. Plain `export * from` is rejected because a browser global cannot be safely enumerated as static ESM exports.
+
+With `dev: true`, the development server continues to inject CDN tags and transform JavaScript module references. Inline HTML styles and other CSS requests are excluded from JavaScript AST transformation.
 
 ## `buildInfo(options?)`
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 2.0.13 - 2026-09-01
+
+- Fixed `cdnImport({ dev: true })` parsing Vite HTML inline-style proxy requests as JavaScript; CSS requests are now ignored while CDN tags and JavaScript import transforms remain enabled in development.
+
 ## 2.0.12 - 2026-08-30
 
 - Changed the generated SVG icon root index to emit one named export per line, keeping large icon collections stable under formatting.

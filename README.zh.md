@@ -121,6 +121,8 @@ cdnImport({
 
 支持默认导入、命名导入、命名重导出、`export * as name` 和静态字符串动态导入。普通 `export * from "module"` 无法安全枚举全局对象，会明确报错。
 
+启用 `dev: true` 时，开发服务器会注入 CDN 标签并转换 JavaScript 模块引用，同时跳过 HTML 内联样式及其他 CSS 请求。
+
 ### 构建信息
 
 ```ts
