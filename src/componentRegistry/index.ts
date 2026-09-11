@@ -476,7 +476,8 @@ function resolveOptions(options: ComponentRegistryPluginOptions): ResolvedOption
 		throw new Error("[fast-vite:component-registry] dirs 不能包含空路径。");
 	}
 	if (extensions.size === 0) throw new Error("[fast-vite:component-registry] extensions 至少需要一个扩展名。");
-	if (options.conflict && !["error", "warn", "overwrite"].includes(options.conflict)) {
+	const configuredConflict: unknown = options.conflict;
+	if (configuredConflict !== undefined && configuredConflict !== "error" && configuredConflict !== "warn" && configuredConflict !== "overwrite") {
 		throw new Error("[fast-vite:component-registry] conflict 只能是 error、warn 或 overwrite。");
 	}
 	if (options.output === false && options.dts === false) {

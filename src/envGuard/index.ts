@@ -50,16 +50,24 @@ function validateEnvironment(schema: EnvSchema, environment: Readonly<Record<str
  * @throws schema、空值规则或失败枚举无效时抛出异常。
  */
 export function envGuard(options: EnvGuardPluginOptions): Plugin {
-	if (!options.schema || typeof options.schema !== "object" || Array.isArray(options.schema) || Object.keys(options.schema).length === 0) {
+	const configuredSchema: unknown = options.schema;
+	if (
+		typeof configuredSchema !== "object" ||
+		configuredSchema === null ||
+		Array.isArray(configuredSchema) ||
+		Object.keys(configuredSchema).length === 0
+	) {
 		throw new Error("[fast-vite:env-guard] schema 至少需要一条环境变量规则。");
 	}
-	if (options.onInvalid && options.onInvalid !== "error" && options.onInvalid !== "warn") {
+	const configuredOnInvalid: unknown = options.onInvalid;
+	if (configuredOnInvalid !== undefined && configuredOnInvalid !== "error" && configuredOnInvalid !== "warn") {
 		throw new Error("[fast-vite:env-guard] onInvalid 只能是 error 或 warn。");
 	}
 	if (options.skipModes?.some((mode) => !mode.trim())) throw new Error("[fast-vite:env-guard] skipModes 不能包含空模式。");
 	for (const [key, rule] of Object.entries(options.schema)) {
 		if (!key.trim()) throw new Error("[fast-vite:env-guard] 环境变量名称不能为空。");
-		if (rule !== true && (!rule || typeof rule !== "object" || Array.isArray(rule))) {
+		const configuredRule: unknown = rule;
+		if (configuredRule !== true && (typeof configuredRule !== "object" || configuredRule === null || Array.isArray(configuredRule))) {
 			throw new Error(`[fast-vite:env-guard] ${key} 的规则必须是 true 或对象。`);
 		}
 		if (rule !== true && rule.values?.length === 0) {

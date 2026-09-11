@@ -87,8 +87,9 @@ function transformCdnImports(
 	parsedProgram: unknown,
 	sourceName = "source.js"
 ): { code: string; map: GeneratedSourceMap } | undefined {
+	if (typeof parsedProgram !== "object" || parsedProgram === null) return undefined;
 	const program = parsedProgram as AstProgram;
-	if (!Array.isArray(program?.body)) return undefined;
+	if (!Array.isArray(program.body)) return undefined;
 
 	const replacements: Replacement[] = [];
 	const usedBindings = collectIdentifierNames(program);
@@ -170,7 +171,8 @@ async function resolveCdnModules(root: string, options: CdnImportPluginOptions, 
  * @throws 模块、别名、URL、全局变量或标签枚举无效时抛出异常。
  */
 export function cdnImport(options: CdnImportPluginOptions): Plugin {
-	if (options.modules === undefined) throw new Error("[fast-vite:cdn-import] modules 至少需要一个模块。");
+	const configuredModules: unknown = options.modules;
+	if (configuredModules === undefined) throw new Error("[fast-vite:cdn-import] modules 至少需要一个模块。");
 	if (options.urlTemplate !== undefined && !options.urlTemplate.trim()) throw new Error("[fast-vite:cdn-import] urlTemplate 不能为空。");
 	if (options.crossorigin !== undefined && ![false, "anonymous", "use-credentials"].includes(options.crossorigin)) {
 		throw new Error("[fast-vite:cdn-import] crossorigin 只能是 false、anonymous 或 use-credentials。");
@@ -413,7 +415,7 @@ function visitAst(value: unknown, visitor: (node: AstNode) => void): void {
 
 async function findPackageVersion(root: string, packageName: string): Promise<string> {
 	let directory = path.resolve(root);
-	while (true) {
+	for (;;) {
 		const packageFile = path.join(directory, "node_modules", packageName, "package.json");
 		try {
 			const parsed = JSON.parse(await readFile(packageFile, "utf8")) as { version?: unknown };
@@ -434,8 +436,12 @@ function toArray(value: string | readonly string[] | undefined): readonly string
 }
 
 function validateModule(module: CdnModule): void {
-	if (!module || typeof module !== "object" || Array.isArray(module)) throw new Error("[fast-vite:cdn-import] 模块配置必须是对象。");
-	if (!module.name?.trim()) throw new Error("[fast-vite:cdn-import] 模块 name 不能为空。");
+	const configuredModule: unknown = module;
+	if (typeof configuredModule !== "object" || configuredModule === null || Array.isArray(configuredModule)) {
+		throw new Error("[fast-vite:cdn-import] 模块配置必须是对象。");
+	}
+	const moduleRecord = configuredModule as Record<string, unknown>;
+	if (typeof moduleRecord.name !== "string" || !moduleRecord.name.trim()) throw new Error("[fast-vite:cdn-import] 模块 name 不能为空。");
 	if (!module.global) throw new Error(`[fast-vite:cdn-import] ${module.name} 的 global 不能为空。`);
 	if (toArray(module.js).length === 0 || toArray(module.js).some((file) => typeof file !== "string" || !file.trim())) {
 		throw new Error(`[fast-vite:cdn-import] ${module.name} 至少需要一个非空 JavaScript 文件。`);

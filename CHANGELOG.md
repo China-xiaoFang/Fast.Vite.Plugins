@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 2.0.14 - 2026-09-11
+
+- Strengthened runtime option validation across plugins so invalid falsy JavaScript values are rejected instead of bypassing enum, object, array, or algorithm checks.
+- Enabled type-aware unnecessary-condition and async-function lint checks for plugin sources, aligning the implementations without changing the public API.
+
 ## 2.0.13 - 2026-09-01
 
 - Fixed `cdnImport({ dev: true })` parsing Vite HTML inline-style proxy requests as JavaScript; CSS requests are now ignored while CDN tags and JavaScript import transforms remain enabled in development.

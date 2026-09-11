@@ -181,6 +181,7 @@ defineOptions({ title: "name: \"StringName\"", nested: { name: "NestedName" }, n
 });
 
 test("generator plugins reject conflicts, unsupported outputs and paths outside root", async () => {
+	assert.throws(() => componentRegistry({ conflict: "" }), /conflict/);
 	assert.throws(() => componentRegistry({ output: "types/components.d.ts", dts: "types/components.d.ts" }), /不能指向同一文件/);
 	assert.throws(() => componentRegistry({ output: "src/components.js" }), /TypeScript/);
 	assert.throws(() => componentRegistry({ dts: "types/components.ts" }), /\.d\.ts/);

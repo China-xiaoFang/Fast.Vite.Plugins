@@ -27,7 +27,8 @@ async function copyTargets(
 	onWarning: (message: string) => void = () => undefined
 ): Promise<void> {
 	if (targets.length === 0) throw new Error("[fast-vite:static-copy] targets 至少需要一个复制目标。");
-	if (missing !== "error" && missing !== "warn" && missing !== "ignore") {
+	const configuredMissing: unknown = missing;
+	if (configuredMissing !== "error" && configuredMissing !== "warn" && configuredMissing !== "ignore") {
 		throw new Error("[fast-vite:static-copy] missing 只能是 error、warn 或 ignore。");
 	}
 	await assertNoSymlinkInPath(path.parse(outDir).root, outDir, "目标路径");
@@ -97,14 +98,20 @@ export function staticCopy(options: StaticCopyPluginOptions): Plugin {
 	if (!Array.isArray(configuredTargets)) throw new Error("[fast-vite:static-copy] targets 必须是数组。");
 	if (options.targets.length === 0) throw new Error("[fast-vite:static-copy] targets 至少需要一个复制目标。");
 	for (const target of options.targets) {
-		if (!target || typeof target !== "object" || Array.isArray(target) || typeof target.src !== "string" || typeof target.dest !== "string") {
+		const configuredTarget: unknown = target;
+		if (typeof configuredTarget !== "object" || configuredTarget === null || Array.isArray(configuredTarget)) {
+			throw new Error("[fast-vite:static-copy] 每个 target 都必须包含字符串 src 与 dest。");
+		}
+		const targetRecord = configuredTarget as Record<string, unknown>;
+		if (typeof targetRecord.src !== "string" || typeof targetRecord.dest !== "string") {
 			throw new Error("[fast-vite:static-copy] 每个 target 都必须包含字符串 src 与 dest。");
 		}
 		if (!target.src.trim() || !isSafeOutputFileName(target.dest)) {
 			throw new Error("[fast-vite:static-copy] src 不能为空，dest 必须是合法的构建产物名。");
 		}
 	}
-	if (options.missing && !["error", "warn", "ignore"].includes(options.missing)) {
+	const configuredMissing: unknown = options.missing;
+	if (configuredMissing !== undefined && configuredMissing !== "error" && configuredMissing !== "warn" && configuredMissing !== "ignore") {
 		throw new Error("[fast-vite:static-copy] missing 只能是 error、warn 或 ignore。");
 	}
 	let config: ResolvedConfig;
@@ -132,7 +139,7 @@ export function staticCopy(options: StaticCopyPluginOptions): Plugin {
 
 async function nearestExistingDirectory(directory: string): Promise<string> {
 	let current = directory;
-	while (true) {
+	for (;;) {
 		try {
 			if ((await stat(current)).isDirectory()) return current;
 		} catch (error) {

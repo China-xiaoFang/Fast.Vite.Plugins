@@ -44,7 +44,8 @@ function generateIntegrity(
  * @returns 转换后的 HTML、已注入产物和缺失本地资源。
  */
 function injectIntegrity(html: string, options: IntegrityInjectionOptions): IntegrityInjectionResult {
-	if (!options.integrities || typeof options.integrities !== "object" || Array.isArray(options.integrities)) {
+	const configuredIntegrities: unknown = options.integrities;
+	if (typeof configuredIntegrities !== "object" || configuredIntegrities === null || Array.isArray(configuredIntegrities)) {
 		throw new Error("[fast-vite:subresource-integrity] integrities 必须是对象。");
 	}
 	const injected = new Set<string>();
@@ -99,7 +100,8 @@ export function subresourceIntegrity(options: SubresourceIntegrityPluginOptions 
 	if (options.crossorigin !== undefined && ![false, "anonymous", "use-credentials"].includes(options.crossorigin)) {
 		throw new Error("[fast-vite:subresource-integrity] crossorigin 只能是 false、anonymous 或 use-credentials。");
 	}
-	const algorithms = normalizeAlgorithms(options.algorithms ?? "sha384");
+	const configuredAlgorithms: unknown = options.algorithms;
+	const algorithms = normalizeAlgorithms(configuredAlgorithms === undefined ? "sha384" : configuredAlgorithms);
 	const filter = options.filter ?? DEFAULT_FILTER;
 	const manifestFileName = resolveManifestFileName(options.manifest);
 	let config: ResolvedConfig;
@@ -157,12 +159,18 @@ export function subresourceIntegrity(options: SubresourceIntegrityPluginOptions 
 	};
 }
 
-function normalizeAlgorithms(configured: SubresourceIntegrityAlgorithm | readonly SubresourceIntegrityAlgorithm[]): SubresourceIntegrityAlgorithm[] {
-	const algorithms = [...new Set(typeof configured === "string" ? [configured] : configured)];
-	if (algorithms.length === 0 || algorithms.some((algorithm) => !SUPPORTED_ALGORITHMS.has(algorithm))) {
+function normalizeAlgorithms(configured: unknown): SubresourceIntegrityAlgorithm[] {
+	const configuredAlgorithms = typeof configured === "string" ? [configured] : configured;
+	if (
+		!Array.isArray(configuredAlgorithms) ||
+		configuredAlgorithms.length === 0 ||
+		configuredAlgorithms.some(
+			(algorithm) => typeof algorithm !== "string" || !SUPPORTED_ALGORITHMS.has(algorithm as SubresourceIntegrityAlgorithm)
+		)
+	) {
 		throw new Error("[fast-vite:subresource-integrity] algorithms 只能包含 sha256、sha384 或 sha512，且不能为空。");
 	}
-	return algorithms;
+	return [...new Set(configuredAlgorithms)] as SubresourceIntegrityAlgorithm[];
 }
 
 function matchesFilter(fileName: string, type: "asset" | "chunk", filter: SubresourceIntegrityFilter): boolean {
