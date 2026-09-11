@@ -131,7 +131,9 @@ test("dev restart plugin debounces watched changes and runs its hook", async () 
 	await plugin.configureServer(server);
 	watcher.emit("all", "change", path.resolve("tests/fixtures/integration/index.html"));
 	watcher.emit("all", "change", path.resolve("tests/fixtures/integration/src/main.js"));
-	await new Promise((resolve) => setTimeout(resolve, 25));
+	await new Promise((resolve) => {
+		setTimeout(resolve, 25);
+	});
 
 	assert.deepEqual(restarts, [false]);
 	assert.equal(beforeRestart.length, 1);
@@ -165,10 +167,14 @@ test("dev restart disposal clears work queued while a restart is running", async
 	await plugin.configureServer(server);
 	const file = path.resolve("tests/fixtures/integration/index.html");
 	watcher.emit("all", "change", file);
-	await new Promise((resolve) => setTimeout(resolve, 5));
+	await new Promise((resolve) => {
+		setTimeout(resolve, 5);
+	});
 	watcher.emit("all", "change", file);
 	watcher.emit("close");
 	release();
-	await new Promise((resolve) => setTimeout(resolve, 10));
+	await new Promise((resolve) => {
+		setTimeout(resolve, 10);
+	});
 	assert.equal(restartCount, 1);
 });
