@@ -15,10 +15,6 @@ const isStyleImport = (source) => typeof source === "string" && STYLE_IMPORT_PAT
 
 const importOrderRule = eslintPluginImportX.rules.order;
 
-if (importOrderRule === undefined) {
-	throw new Error("eslint-plugin-import-x does not provide the order rule.");
-}
-
 /**
  * 复用 import-x/order 的全部行为，但把样式导入交给 style-imports-last 独立处理。
  *
@@ -185,17 +181,18 @@ export default defineConfig(
 			"no-alert": "warn",
 			// switch 的 case 不创建词法作用域；要求用花括号包裹声明，避免跨 case 冲突。
 			"no-case-declarations": "error",
+			// 禁止动态执行字符串代码，避免代码注入和静态分析失效。
+			"no-eval": "error",
 			// 禁止反斜杠续行字符串，优先使用可读性更好的模板字符串。
 			"no-multi-str": "error",
 			// with 会让标识符解析不可预测，并且在严格模式和 ESM 中不可用。
 			"no-with": "error",
-			// 允许用 `void promise` 明确忽略 Promise，但禁止在普通表达式中滥用 void。
-			"no-void": [
-				"error",
-				{
-					allowAsStatement: true,
-				},
-			],
+			// Promise 是否等待由业务语义决定，不使用 `void promise` 作为 ESLint 规避语法。
+			"no-void": "error",
+			// 简单单行分支允许省略花括号；多行分支必须使用花括号，同一条件链保持一致。
+			curly: ["error", "multi-line", "consistent"],
+			// default 分支不是强制项，但存在时统一位于其他 case 之后。
+			"default-case-last": "error",
 			// 要求严格相等；保留 `value == null` 同时判断 null/undefined 的常用写法。
 			eqeqeq: ["error", "always", { null: "ignore" }],
 			// 使用幂运算符代替 Math.pow，使数学表达式更直接。
@@ -376,7 +373,8 @@ export default defineConfig(
 					"no-redeclare": "error",
 				},
 			},
-			...tseslint.configs.recommendedTypeChecked,
+			...tseslint.configs.strictTypeChecked,
+			...tseslint.configs.stylisticTypeChecked,
 		],
 		languageOptions: {
 			ecmaVersion: "latest",
@@ -389,15 +387,19 @@ export default defineConfig(
 		 * TypeScript 本地覆写规则。
 		 *
 		 * @remarks
-		 * 公共模块边界要求显式类型，业务内部函数保留 TypeScript 返回类型推断；默认的
-		 * recommendedTypeChecked 预置负责补充类型语义检查。
+		 * 普通 TS/TSX 的命名函数与公共模块边界要求显式类型，内联回调保留上下文推断；
+		 * strictTypeChecked 与 stylisticTypeChecked 预置负责补充类型语义和官方风格检查。
 		 */
 		rules: {
+			// 单独使用 TypeScript 配置时也禁止用 void 操作符标记被忽略的 Promise。
+			"no-void": "error",
+			// 普通 TS/TSX 函数要求显式返回类型；内联回调和已有函数类型约束的表达式继续依赖上下文推断。
+			"@typescript-eslint/explicit-function-return-type": ["error", { allowExpressions: true, allowTypedFunctionExpressions: true }],
 			// 导出函数和类的公共方法必须显式声明参数与返回类型，使公共 API 不依赖实现细节推断；参数不允许显式 any。
 			"@typescript-eslint/explicit-module-boundary-types": ["error", { allowArgumentsExplicitlyTypedAsAny: false }],
 			// 使用 TypeScript 版本避免核心规则误判声明合并、类型和值的同名声明。
 			"@typescript-eslint/no-redeclare": "error",
-			// 未使用符号视为错误；以下划线开头可显式表示参数、异常或变量被有意忽略。
+			// 未使用符号视为错误；仅参数和异常可用下划线明确表示有意忽略。
 			"@typescript-eslint/no-unused-vars": [
 				"error",
 				{
@@ -406,7 +408,6 @@ export default defineConfig(
 					caughtErrors: "all",
 					caughtErrorsIgnorePattern: "^_",
 					ignoreRestSiblings: true,
-					varsIgnorePattern: "^_",
 				},
 			],
 			// [默认关闭] 声明文件、全局扩展和部分 SDK 仍需要 namespace。
@@ -442,7 +443,46 @@ export default defineConfig(
 			],
 
 			/** 仅在 Project Service 提供完整类型信息后应用的 TypeScript 类型感知规则覆写。 */
-			// 默认 in-try-catch 模式：try/catch/finally 内要求 return await，让本地错误处理捕获 Promise 拒绝；其他位置避免多余 await。
+			// 是否等待、返回或处理 Promise 由开发者根据业务顺序和异常语义决定。
+			"@typescript-eslint/no-floating-promises": "off",
+			// 不限制框架生命周期和事件回调的返回写法。
+			"@typescript-eslint/strict-void-return": "off",
+			// 核心 no-void 已禁止全部 void 操作符，关闭类型感知的重复诊断。
+			"@typescript-eslint/no-meaningless-void-operator": "off",
+			// 保留简洁的 `() => notify()` 回调，其他容易混淆 void 值与返回值的用法继续检查。
+			"@typescript-eslint/no-confusing-void-expression": ["error", { ignoreArrowShorthand: true }],
+			// 数字是模板字符串的常见安全插值；对象、any 和空值仍需显式处理。
+			"@typescript-eslint/restrict-template-expressions": ["error", { allowNumber: true }],
+			// 动态删除对象字段是表单和字典的正常操作；数组 delete 仍由 no-array-delete 禁止。
+			"@typescript-eslint/no-dynamic-delete": "off",
+			// 纯静态工具类可能是 SDK 的有意 API 设计，不强制改写为函数或对象。
+			"@typescript-eslint/no-extraneous-class": "off",
+			// 弃用 API 需要可见，但兼容多个依赖版本时不应直接阻断构建。
+			"@typescript-eslint/no-deprecated": "warn",
+			// TypeScript 类型不一定覆盖外部输入的真实运行时，防御性条件仅提醒审查。
+			"@typescript-eslint/no-unnecessary-condition": "warn",
+			// 语法形式不影响类型安全，不强制 interface/type、索引类型、字面量属性和 RegExp API 的单一写法。
+			"@typescript-eslint/consistent-type-definitions": "off",
+			"@typescript-eslint/consistent-indexed-object-style": "off",
+			"@typescript-eslint/class-literal-property-style": "off",
+			"@typescript-eslint/prefer-regexp-exec": "off",
+			// 纯类型导出必须使用 export type，避免生成或暗示不存在的运行时导出。
+			"@typescript-eslint/consistent-type-exports": "error",
+			// 只在构造阶段赋值且之后保持不变的私有成员应声明为 readonly。
+			"@typescript-eslint/prefer-readonly": "error",
+			// 原始类型的 || 与 ?? 可能承载不同业务语义，不为了风格强制互换。
+			"@typescript-eslint/prefer-nullish-coalescing": ["error", { ignorePrimitives: true }],
+			// 参数名称或独立 JSDoc 属于公共重载契约；仅合并真正重复的签名。
+			"@typescript-eslint/unified-signatures": [
+				"error",
+				{
+					ignoreDifferentlyNamedParameters: true,
+					ignoreOverloadsWithDifferentJSDoc: true,
+				},
+			],
+			// 联合类型和枚举新增成员时，switch 必须覆盖全部分支或显式提供 default。
+			"@typescript-eslint/switch-exhaustiveness-check": "error",
+			// 保持严格预置的 error-handling-correctness-only 模式，只在异常处理语义需要时要求 return await。
 			"@typescript-eslint/return-await": "error",
 			// 允许透明转发外部 Promise 的未知拒绝原因；静态可知的 string、number 等仍会被报告。
 			"@typescript-eslint/prefer-promise-reject-errors": ["error", { allowThrowingUnknown: true }],
@@ -850,13 +890,21 @@ export default defineConfig(
 		files: ["tests/fixtures/integration/**/*.js"],
 		languageOptions: { globals: globals.browser },
 	},
+	// 插件选项和宿主环境可能来自 JavaScript、配置文件或不同 Vite 版本，运行时防御不能仅按当前静态类型删除。
+	{
+		name: "fast-vite-plugins/runtime-boundaries",
+		files: ["src/**/*.ts"],
+		rules: { "@typescript-eslint/no-unnecessary-condition": "off" },
+	},
 	// 创建 Prettier 兼容层。
 	{
 		...eslintConfigPrettier,
 		name: "fast-vite-plugins/prettier",
 		// 只保留 ESLint 核心与 TypeScript 格式兼容规则，不加载当前项目未使用的框架规则。
 		rules: Object.fromEntries(
-			Object.entries(eslintConfigPrettier.rules).filter(([ruleName]) => !ruleName.includes("/") || ruleName.startsWith("@typescript-eslint/"))
+			Object.entries(eslintConfigPrettier.rules).filter(
+				([ruleName]) => ruleName !== "curly" && (!ruleName.includes("/") || ruleName.startsWith("@typescript-eslint/"))
+			)
 		),
 	},
 	// Node.js 配置、脚本、测试与 CLI 允许终端日志和 CommonJS 兼容加载。
