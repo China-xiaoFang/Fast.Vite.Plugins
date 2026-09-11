@@ -95,8 +95,9 @@ async function scanSvgIcons(root: string, options: SvgIconsPluginOptions = {}): 
 		if (resolved.include && !resolved.include(context)) continue;
 
 		const name = resolved.name?.(context) ?? defaultName;
-		if (!isValidBindingIdentifier(name))
+		if (!isValidBindingIdentifier(name)) {
 			throw new Error(`[fast-vite:svg-icons] 组件名不能作为生成代码绑定名 ${JSON.stringify(name)}：${relativePath}`);
+		}
 		const previous = icons.get(name);
 		if (previous) throw new Error(`[fast-vite:svg-icons] 图标组件名冲突 ${JSON.stringify(name)}：${previous.relativePath} 与 ${relativePath}`);
 
@@ -236,8 +237,9 @@ function tokenizeSvgContent(content: string): string[] {
 				if (character === quote) quote = undefined;
 				continue;
 			}
-			if (character === "'" || character === '"') quote = character;
-			else if (character === ">") {
+			if (character === "'" || character === '"') {
+				quote = character;
+			} else if (character === ">") {
 				tagEnd = cursor;
 				break;
 			}

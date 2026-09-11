@@ -64,13 +64,11 @@ const individualPlugins: Plugin[] = [
 	virtualModules(virtualModulesOptions),
 ];
 
-void individualPlugins;
-void cdnJsDelivrUrl;
-void cdnUnpkgUrl;
+export { cdnJsDelivrUrl, cdnUnpkgUrl, individualPlugins };
 
 type PublicApi = typeof import("fast-vite-plugins");
 // @ts-expect-error 转换辅助函数属于内部实现，不是公共 API。
-type _InternalHelperMustNotBePublic = PublicApi["transformCdnImports"];
+export type InternalHelperMustNotBePublic = PublicApi["transformCdnImports"];
 
 // @ts-expect-error algorithms 只接受受支持的压缩算法。
 compression({ algorithms: ["zip"] });

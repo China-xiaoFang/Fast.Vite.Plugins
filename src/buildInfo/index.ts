@@ -86,7 +86,7 @@ export function buildInfo(options: BuildInfoPluginOptions = {}): Plugin {
 					next();
 					return;
 				}
-				void serialize()
+				serialize()
 					.then((body) => {
 						response.statusCode = 200;
 						response.setHeader("Content-Type", "application/json; charset=utf-8");

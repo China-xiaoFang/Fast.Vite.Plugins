@@ -99,7 +99,9 @@ function readTopLevelName(source: string, objectStart: number): string | undefin
 			index = quotedEnd;
 			continue;
 		}
-		switch (source[index]) {
+		const character = source.at(index);
+		if (character === undefined) return undefined;
+		switch (character) {
 			case "{":
 				braceDepth += 1;
 				break;
@@ -138,9 +140,10 @@ function readStaticString(source: string, index: number): { end: number; value: 
 	if (quote !== '"' && quote !== "'" && quote !== "`") return undefined;
 	let value = "";
 	for (let cursor = index + 1; cursor < source.length; cursor += 1) {
-		const character = source[cursor];
+		const character = source.at(cursor);
+		if (character === undefined) return undefined;
 		if (character === "\\") {
-			const escaped = source[cursor + 1];
+			const escaped = source.at(cursor + 1);
 			if (escaped === undefined) return undefined;
 			value += escaped;
 			cursor += 1;

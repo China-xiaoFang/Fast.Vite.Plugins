@@ -351,7 +351,9 @@ function createSourceMap(source: string, generated: string, origins: readonly nu
 		if (source[index] === "\n") {
 			line += 1;
 			column = 0;
-		} else column += 1;
+		} else {
+			column += 1;
+		}
 	}
 
 	const lines: string[][] = [[]];
@@ -373,7 +375,9 @@ function createSourceMap(source: string, generated: string, origins: readonly nu
 		if (generated[index] === "\n") {
 			lines.push([]);
 			generatedColumn = 0;
-		} else generatedColumn += 1;
+		} else {
+			generatedColumn += 1;
+		}
 	}
 	return { version: 3, names: [], sources: [sourceName], sourcesContent: [source], mappings: lines.map((items) => items.join(",")).join(";") };
 }
