@@ -148,3 +148,8 @@ test("CDN plugin rejects invalid global names through its public configuration",
 	plugin.config({}, environment);
 	await assert.rejects(plugin.configResolved({ command: "build", root: process.cwd() }), /非法浏览器全局变量/);
 });
+
+test("CDN plugin rejects invalid runtime module configuration", async () => {
+	assert.throws(() => cdnImport({ modules: undefined }), /modules/);
+	await assert.rejects(configure({ modules: null }), /模块配置必须是对象/);
+});

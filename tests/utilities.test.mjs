@@ -112,5 +112,10 @@ test("plugin functions reject empty or unsafe configuration", () => {
 	assert.throws(() => buildInfo({ virtualModuleId: "build-info" }), /必须以 virtual:/);
 	assert.throws(() => buildInfo({ fileName: "." }), /相对路径/);
 	assert.throws(() => compression({ threshold: Number.POSITIVE_INFINITY }), /有限数值/);
+	assert.throws(() => compression({ algorithms: null }), /algorithms/);
+	assert.throws(() => htmlTemplate({ data: null }), /data/);
+	assert.throws(() => htmlTemplate({ data: [] }), /data/);
+	assert.throws(() => virtualModules({ modules: null }), /modules/);
+	assert.throws(() => virtualModules({ modules: [] }), /modules/);
 	assert.throws(() => virtualModules({ modules: {} }), /至少需要一个模块/);
 });

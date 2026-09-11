@@ -50,7 +50,8 @@ function replaceHtmlPlaceholders(html: string, data: HtmlTemplateData, escape = 
  * @throws 选项或模板数据无效，以及 strict 模式仍有占位符时抛出异常。
  */
 export function htmlTemplate(options: HtmlTemplatePluginOptions): Plugin {
-	if (!options.data || (typeof options.data !== "function" && (typeof options.data !== "object" || Array.isArray(options.data)))) {
+	const configuredData: unknown = options.data;
+	if (typeof configuredData !== "function" && (typeof configuredData !== "object" || configuredData === null || Array.isArray(configuredData))) {
 		throw new Error("[fast-vite:html-template] data 必须是对象或函数。");
 	}
 	let env: ConfigEnv;

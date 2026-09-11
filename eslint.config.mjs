@@ -902,18 +902,6 @@ export default defineConfig(
 		files: ["tests/fixtures/integration/**/*.js"],
 		languageOptions: { globals: globals.browser },
 	},
-	// 插件选项和宿主环境可能来自 JavaScript、配置文件或不同 Vite 版本，运行时防御不能仅按当前静态类型删除。
-	{
-		name: "fast-vite-plugins/runtime-boundaries",
-		files: ["src/**/*.ts"],
-		rules: { "@typescript-eslint/no-unnecessary-condition": "off" },
-	},
-	// 该闭包直接返回构建信息 Promise，保持同一引用可避免无意义的异步包装。
-	{
-		name: "fast-vite-plugins/promise-forwarding-contract",
-		files: ["src/buildInfo/index.ts"],
-		rules: { "@typescript-eslint/promise-function-async": "off" },
-	},
 	// 创建 Prettier 兼容层。
 	{
 		...eslintConfigPrettier,

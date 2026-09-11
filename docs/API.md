@@ -1,10 +1,12 @@
 # API reference
 
-This document covers `fast-vite-plugins@2.0.13`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
+This document covers `fast-vite-plugins@2.0.14`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
 
 ## Entry points and errors
 
 The package has one public module entry. It exports one function per plugin plus the option and callback types needed to configure those plugins. Scanners, renderers, transforms, measurements, and other implementation helpers are intentionally internal.
+
+Runtime option validation also applies to JavaScript and dynamically constructed configuration. Only `undefined` means an optional value was omitted; invalid falsy values such as `null` and `""` are rejected.
 
 When combined, `subresourceIntegrity` → `bundleBudget` → `compression` is mandatory and validated during config resolution. See the [risk guide](./RISKS.md) for deployment and trust boundaries.
 

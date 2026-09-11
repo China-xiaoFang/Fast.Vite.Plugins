@@ -52,7 +52,7 @@ export function buildInfo(options: BuildInfoPluginOptions = {}): Plugin {
 	let env: ConfigEnv;
 	let information: Promise<BuildInformation>;
 
-	const getInformation = (): Promise<BuildInformation> => information;
+	const getInformation = async (): Promise<BuildInformation> => information;
 	const serialize = async (): Promise<string> => `${JSON.stringify(await getInformation(), null, 2)}\n`;
 
 	return {

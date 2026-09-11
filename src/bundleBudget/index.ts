@@ -78,7 +78,8 @@ async function evaluateBundleBudgets(
  */
 export function bundleBudget(options: BundleBudgetPluginOptions): Plugin {
 	validateBudgets(options.budgets);
-	if (options.onExceed && options.onExceed !== "error" && options.onExceed !== "warn") {
+	const configuredOnExceed: unknown = options.onExceed;
+	if (configuredOnExceed !== undefined && configuredOnExceed !== "error" && configuredOnExceed !== "warn") {
 		throw new Error("[fast-vite:bundle-budget] onExceed 只能是 error 或 warn。");
 	}
 
@@ -121,10 +122,12 @@ function validateBudgets(budgets: readonly BundleBudgetRule[]): void {
 		if (!Number.isSafeInteger(budget.limit) || budget.limit < 0) {
 			throw new Error(`[fast-vite:bundle-budget] 第 ${index + 1} 条预算的 limit 必须是大于或等于 0 的安全整数。`);
 		}
-		if (budget.scope && budget.scope !== "file" && budget.scope !== "total") {
+		const configuredScope: unknown = budget.scope;
+		if (configuredScope !== undefined && configuredScope !== "file" && configuredScope !== "total") {
 			throw new Error(`[fast-vite:bundle-budget] 第 ${index + 1} 条预算的 scope 只能是 file 或 total。`);
 		}
-		if (budget.mode && budget.mode !== "raw" && budget.mode !== "gzip" && budget.mode !== "brotli") {
+		const configuredMode: unknown = budget.mode;
+		if (configuredMode !== undefined && configuredMode !== "raw" && configuredMode !== "gzip" && configuredMode !== "brotli") {
 			throw new Error(`[fast-vite:bundle-budget] 第 ${index + 1} 条预算的 mode 只能是 raw、gzip 或 brotli。`);
 		}
 	}

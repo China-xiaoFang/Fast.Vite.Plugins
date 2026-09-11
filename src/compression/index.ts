@@ -2,7 +2,7 @@ import { compressBytes } from "../shared/compression";
 import { isSafeOutputFileName } from "../shared/fileSystem";
 import { assertPostBuildPluginOrder } from "../shared/order";
 import type { Plugin } from "vite";
-import type { CompressionPluginOptions } from "./type";
+import type { CompressionAlgorithm, CompressionPluginOptions } from "./type";
 
 export type { CompressionAlgorithm, CompressionPluginOptions } from "./type";
 
@@ -18,8 +18,9 @@ const DEFAULT_FILTER = /\.(?:css|html?|js|json|mjs|svg|txt|wasm|xml)$/i;
  * @throws 算法、数值、文件名或产物顺序无效时抛出异常。
  */
 export function compression(options: CompressionPluginOptions = {}): Plugin {
-	const configuredAlgorithms = options.algorithms ?? ["gzip", "brotli"];
-	const algorithms = [...new Set(typeof configuredAlgorithms === "string" ? [configuredAlgorithms] : configuredAlgorithms)];
+	const configuredAlgorithms: unknown = options.algorithms;
+	const algorithmsWithDefault = configuredAlgorithms === undefined ? ["gzip", "brotli"] : configuredAlgorithms;
+	const algorithmValues = typeof algorithmsWithDefault === "string" ? [algorithmsWithDefault] : algorithmsWithDefault;
 	const threshold = options.threshold ?? 1024;
 	const minRatio = options.minRatio ?? 0.95;
 	const filter = options.filter ?? DEFAULT_FILTER;
@@ -28,9 +29,14 @@ export function compression(options: CompressionPluginOptions = {}): Plugin {
 	if (!Number.isFinite(minRatio) || minRatio <= 0 || minRatio > 1) {
 		throw new Error("[fast-vite:compression] minRatio 必须是大于 0 且不超过 1 的有限数值。");
 	}
-	if (algorithms.length === 0 || algorithms.some((algorithm) => algorithm !== "gzip" && algorithm !== "brotli")) {
+	if (
+		!Array.isArray(algorithmValues) ||
+		algorithmValues.length === 0 ||
+		algorithmValues.some((algorithm) => algorithm !== "gzip" && algorithm !== "brotli")
+	) {
 		throw new Error("[fast-vite:compression] algorithms 只能包含 gzip 或 brotli。");
 	}
+	const algorithms = [...new Set(algorithmValues)] as CompressionAlgorithm[];
 
 	return {
 		name: "fast-vite:compression",

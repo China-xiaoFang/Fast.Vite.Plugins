@@ -29,7 +29,8 @@ export interface VirtualModulesPluginOptions {
  * @throws 模块映射为空、不是对象或包含非 `virtual:` ID 时抛出异常。
  */
 export function virtualModules(options: VirtualModulesPluginOptions): Plugin {
-	if (!options.modules || typeof options.modules !== "object" || Array.isArray(options.modules)) {
+	const configuredModules: unknown = options.modules;
+	if (typeof configuredModules !== "object" || configuredModules === null || Array.isArray(configuredModules)) {
 		throw new Error("[fast-vite:virtual-modules] modules 必须是对象。");
 	}
 	const { modules } = options;

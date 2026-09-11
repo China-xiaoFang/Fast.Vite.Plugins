@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import path from "node:path";
 import { test } from "node:test";
 import { build } from "vite";
-import { bundleBudget, compression, devRestart, subresourceIntegrity } from "../dist/index.mjs";
+import { bundleBudget, compression, devRestart, envGuard, subresourceIntegrity } from "../dist/index.mjs";
 
 test("bundle budget reports per-file, total and missing-match failures", async () => {
 	const plugin = bundleBudget({
@@ -44,8 +44,17 @@ test("plugin functions reject ambiguous or unsafe configuration", () => {
 	);
 	assert.throws(() => devRestart({ paths: "schema/**/*.json" }), /glob/);
 	assert.throws(() => subresourceIntegrity({ algorithms: [] }), /algorithms/);
+	assert.throws(() => subresourceIntegrity({ algorithms: null }), /algorithms/);
 	assert.throws(() => compression({ minRatio: Number.NaN }), /有限数值/);
 	assert.throws(() => bundleBudget({ budgets: [{ limit: 1 }, { limit: 2, name: "budget-1" }] }), /不能重复/);
+	assert.throws(() => bundleBudget({ budgets: [{ limit: 1, scope: "" }] }), /scope/);
+	assert.throws(() => bundleBudget({ budgets: [{ limit: 1, mode: null }] }), /mode/);
+	assert.throws(() => bundleBudget({ budgets: [{ limit: 1 }], onExceed: "" }), /onExceed/);
+	assert.throws(() => envGuard({ schema: { VITE_API_URL: true }, onInvalid: null }), /onInvalid/);
+	for (const schema of [undefined, null, "invalid", [], {}]) {
+		assert.throws(() => envGuard({ schema }), /schema/);
+	}
+	assert.throws(() => envGuard({ schema: { VITE_API_URL: null } }), /规则必须是 true 或对象/);
 });
 
 test("bundle budget plugin can fail a real Vite Web application build", async () => {
