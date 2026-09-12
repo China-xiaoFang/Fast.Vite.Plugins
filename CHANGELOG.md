@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 2.0.15 - 2026-09-12
+
+- Expanded the applicable JavaScript, TypeScript, import, RegExp, JSON, Markdown, sorting, and Prettier rules from Fast.ESLint.Config 2.1.8 directly in the repository's single `eslint.config.mjs`.
+- Kept only the Node, browser-fixture, and project-file scope adaptations required by this Vite plugin package; no shared-config package or framework rule group is loaded.
+
 ## 2.0.14 - 2026-09-11
 
 - Strengthened runtime option validation across plugins so invalid falsy JavaScript values are rejected instead of bypassing enum, object, array, or algorithm checks.

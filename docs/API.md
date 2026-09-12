@@ -1,6 +1,6 @@
 # API reference
 
-This document covers `fast-vite-plugins@2.0.14`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
+This document covers `fast-vite-plugins@2.0.15`. The package is ESM-only. Relative paths are resolved from Vite's `root`; generators sort output deterministically, skip unchanged writes, and reject output outside that root.
 
 ## Entry points and errors
 
