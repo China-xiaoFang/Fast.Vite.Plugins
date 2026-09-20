@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "tsdown": {
+      "source": "antfu/skills",
+      "sourceType": "github",
+      "skillPath": "skills/tsdown/SKILL.md",
+      "computedHash": "9a6610fe135e406e9339fbe9cdce89f97fcae071f64d78f42618420d5a5e2946"
+    },
+    "vite": {
+      "source": "antfu/skills",
+      "sourceType": "github",
+      "skillPath": "skills/vite/SKILL.md",
+      "computedHash": "1cdc4bbecaa89544e6ef92566b015db989994bf90c4472683ac64f7a114dc3af"
+    }
+  }
+}

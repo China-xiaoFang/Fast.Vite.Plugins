@@ -8,6 +8,8 @@
 
 # fast-vite-plugins
 
+**[使用文档](http://docs.fastdotnet.cn/vite-plugins/) · [官方网站](http://fastdotnet.com)**
+
 面向现代 Web 应用的公开开源 Vite 插件库，提供完整类型、独立插件函数、严格安全边界、测试、CI、发布校验和框架级文档。
 
 [![npm](https://img.shields.io/npm/v/fast-vite-plugins)](https://www.npmjs.com/package/fast-vite-plugins) [![node](https://img.shields.io/badge/node-%5E22.18%20%7C%7C%20%5E24.18-brightgreen)](https://nodejs.org/) [![vite](https://img.shields.io/badge/vite-7%20%7C%7C%208-646cff)](https://vite.dev/) [![license](https://img.shields.io/npm/l/fast-vite-plugins)](./LICENSE)
@@ -90,79 +92,7 @@ export default defineConfig({
 
 ## 常用场景
 
-### 组件注册与类型
-
-```ts
-componentRegistry({
-	dirs: ["src/components", "src/features"],
-	output: "src/components/index.ts",
-	dts: "types/components.d.ts",
-	conflict: "error",
-});
-```
-
-生成模块为每个组件提供命名导出、`组件名Instance = InstanceType<typeof 组件名>` 实例类型和 `registerComponents(app)`，注册代码直接使用 `app.component(Component.name, Component)`。插件能够静态确认组件未声明运行时 `name` 时会在生成阶段警告，但仍继续生成；无法可靠判断时默认按已声明处理。类型声明文件同步增强 Vue `GlobalComponents`。`index.vue` 默认使用父目录名，所有生成名称都必须是唯一且合法的 JavaScript 标识符。
-
-### CDN 外部化
-
-```ts
-cdnImport({
-	modules: [
-		{
-			name: "vue",
-			global: "Vue",
-			version: "3.5.0",
-			js: "dist/vue.global.prod.js",
-		},
-	],
-	dev: false,
-});
-```
-
-支持默认导入、命名导入、命名重导出、`export * as name` 和静态字符串动态导入。普通 `export * from "module"` 无法安全枚举全局对象，会明确报错。
-
-启用 `dev: true` 时，开发服务器会注入 CDN 标签并转换 JavaScript 模块引用，同时跳过 HTML 内联样式及其他 CSS 请求。
-
-### 构建信息
-
-```ts
-buildInfo({
-	fileName: "meta/build-info.json",
-	data: ({ mode }) => ({ channel: mode === "production" ? "stable" : "preview" }),
-});
-```
-
-构建后可请求 `/meta/build-info.json`；开发服务器默认提供同名端点。源码中也可以导入 `virtual:fast-vite/build-info`，对应类型声明示例见 [API 文档](./docs/API.zh-CN.md)。
-
-### 生产质量门禁
-
-```ts
-export default defineConfig({
-	plugins: [
-		subresourceIntegrity({ algorithms: "sha384", manifest: true }),
-		bundleBudget({
-			budgets: [
-				{ name: "单个 JS", filter: /\.js$/, limit: 250 * 1024, requireMatch: true },
-				{ name: "CSS 总量", filter: /\.css$/, limit: 50 * 1024, mode: "gzip", scope: "total" },
-			],
-		}),
-		compression({ algorithms: ["gzip", "brotli"] }),
-	],
-});
-```
-
-同时使用这些插件时，应保持 `subresourceIntegrity` → `bundleBudget` → `compression` 的顺序。
-
-### 外部配置变更重启
-
-```ts
-devRestart({
-	paths: ["schema", "config/features.json"],
-	debounce: 100,
-});
-```
-
-用于 Vite 模块图之外但会影响插件初始化的配置或生成输入。Vite 已原生处理 `vite.config` 和 `.env`，无需重复监听。
+[完整配置与示例](http://docs.fastdotnet.cn/vite-plugins/guide)
 
 ## 安全与部署提示
 
@@ -173,8 +103,8 @@ devRestart({
 
 ## 文档
 
-- [完整 API 参考](./docs/API.zh-CN.md)
-- [风险指南](./docs/RISKS.zh-CN.md)
+- [完整 API 参考](http://docs.fastdotnet.cn/vite-plugins/api)
+- [风险指南](http://docs.fastdotnet.cn/vite-plugins/risks)
 - [拉取、开发、发布与部署](./docs/DEVELOPMENT_RELEASE_DEPLOY.zh-CN.md)
 - [贡献指南](./CONTRIBUTING.md)
 - [工程质量审查](./docs/ENGINEERING_REVIEW.zh-CN.md)

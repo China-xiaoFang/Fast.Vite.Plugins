@@ -8,6 +8,8 @@
 
 # fast-vite-plugins
 
+**[Documentation](http://docs.fastdotnet.cn/vite-plugins/) · [Official website](http://fastdotnet.com)**
+
 An open-source collection of production-grade Vite plugins for modern Web applications, with consistent typed APIs, strict safety boundaries, tests, CI, and release validation.
 
 [![npm](https://img.shields.io/npm/v/fast-vite-plugins)](https://www.npmjs.com/package/fast-vite-plugins) [![node](https://img.shields.io/badge/node-%5E22.18%20%7C%7C%20%5E24.18-brightgreen)](https://nodejs.org/) [![vite](https://img.shields.io/badge/vite-7%20%7C%7C%208-646cff)](https://vite.dev/) [![license](https://img.shields.io/npm/l/fast-vite-plugins)](./LICENSE)
@@ -85,79 +87,7 @@ export default defineConfig({
 
 ## Common scenarios
 
-### Component registry and types
-
-```ts
-componentRegistry({
-	dirs: ["src/components", "src/features"],
-	output: "src/components/index.ts",
-	dts: "types/components.d.ts",
-	conflict: "error",
-});
-```
-
-The generated module provides a named component export, a `NameInstance = InstanceType<typeof Name>` type for every component, and `registerComponents(app)`, which directly uses `app.component(Component.name, Component)`. When the plugin can statically confirm that a runtime `name` is missing, it warns during generation but still emits the component; inconclusive source is treated as named. The declaration output augments Vue's `GlobalComponents`. An `index.vue` file uses its parent directory name by default; every generated name must be a unique JavaScript identifier.
-
-### CDN externalization
-
-```ts
-cdnImport({
-	modules: [
-		{
-			name: "vue",
-			global: "Vue",
-			version: "3.5.0",
-			js: "dist/vue.global.prod.js",
-		},
-	],
-	dev: false,
-});
-```
-
-The plugin supports default and named imports, named re-exports, `export * as name`, and static-string dynamic imports. Plain `export * from "module"` fails explicitly because a browser global cannot be enumerated safely at build time.
-
-With `dev: true`, the development server injects CDN tags and transforms JavaScript module references while skipping inline HTML styles and other CSS requests.
-
-### Build information
-
-```ts
-buildInfo({
-	fileName: "meta/build-info.json",
-	data: ({ mode }) => ({ channel: mode === "production" ? "stable" : "preview" }),
-});
-```
-
-The generated file is available at `/meta/build-info.json`; the development server exposes the same endpoint. Source code can also import `virtual:fast-vite/build-info`; see the [API reference](./docs/API.md) for its type declaration.
-
-### Production quality gates
-
-```ts
-export default defineConfig({
-	plugins: [
-		subresourceIntegrity({ algorithms: "sha384", manifest: true }),
-		bundleBudget({
-			budgets: [
-				{ name: "single JavaScript", filter: /\.js$/, limit: 250 * 1024, requireMatch: true },
-				{ name: "all CSS", filter: /\.css$/, limit: 50 * 1024, mode: "gzip", scope: "total" },
-			],
-		}),
-		compression({ algorithms: ["gzip", "brotli"] }),
-	],
-});
-```
-
-When these plugins are combined, keep the order `subresourceIntegrity` → `bundleBudget` → `compression`.
-
-### External configuration restart
-
-```ts
-devRestart({
-	paths: ["schema", "config/features.json"],
-	debounce: 100,
-});
-```
-
-Use `devRestart()` for configuration inputs outside Vite's module graph. Vite already restarts for its own config and `.env` files.
+[Full configuration and examples](http://docs.fastdotnet.cn/vite-plugins/guide.en)
 
 ## Operational notes
 
@@ -169,8 +99,8 @@ Use `devRestart()` for configuration inputs outside Vite's module graph. Vite al
 
 ## Documentation
 
-- [Complete API reference](./docs/API.md)
-- [Risk guide](./docs/RISKS.md)
+- [Complete API reference](http://docs.fastdotnet.cn/vite-plugins/api.en)
+- [Risk guide](http://docs.fastdotnet.cn/vite-plugins/risks.en)
 - [Development, release, and deployment guide (Chinese)](./docs/DEVELOPMENT_RELEASE_DEPLOY.zh-CN.md)
 - [Contributing guide](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
