@@ -20,7 +20,7 @@ export interface DebouncedTask {
  *
  * @param task - 延迟后执行的同步或异步任务。
  * @param delay - 防抖等待时间，单位毫秒。
- * @param onError - 异步任务失败时的统一错误处理器。
+ * @param onError - 同步任务抛错或异步任务拒绝时的统一错误处理器。
  * @returns 可重复调度并取消等待任务的函数。
  */
 export function createDebouncedTask(task: () => Awaitable<void>, delay: number, onError: (error: unknown) => void): DebouncedTask {
@@ -36,7 +36,9 @@ export function createDebouncedTask(task: () => Awaitable<void>, delay: number, 
 			return;
 		}
 
-		running = Promise.resolve(task())
+		// 先进入 Promise 链，同步抛错与异步拒绝都交给同一错误处理器。
+		running = Promise.resolve()
+			.then(task)
 			.catch(onError)
 			.finally(() => {
 				running = undefined;

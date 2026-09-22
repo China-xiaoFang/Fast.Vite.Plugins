@@ -1,6 +1,6 @@
 {
 	"name": "fast-vite-plugins",
-	"version": "2.0.15",
+	"version": "2.0.16",
 	"description": "Production-grade, typed and composable Vite plugins for modern Web applications.",
 	"type": "module",
 	"keywords": [
@@ -53,7 +53,7 @@
 		"format:check": "prettier --check .",
 		"test": "pnpm run build && pnpm run test:types && pnpm run test:runtime && pnpm run test:integration && pnpm run test:package",
 		"test:types": "tsc --noEmit --project tests/tsconfig.json",
-		"test:runtime": "node --test tests/cdn.test.mjs tests/generators.test.mjs tests/platform-plugins.test.mjs tests/static-copy.test.mjs tests/utilities.test.mjs",
+		"test:runtime": "node --test tests/cdn.test.mjs tests/generators.test.mjs tests/platform-plugins.test.mjs tests/static-copy.test.mjs tests/utilities.test.mjs tests/shared-plugin.test.mjs tests/tool-ignores.test.mjs",
 		"test:integration": "node --test tests/vite-integration.test.mjs",
 		"test:package": "node --test tests/package.test.mjs",
 		"check": "pnpm run typecheck && pnpm run test && pnpm run lint && pnpm run format:check",

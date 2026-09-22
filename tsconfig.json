@@ -16,7 +16,7 @@
 		},
 		// 仅加载 Node.js 全局类型，避免测试框架或其他环境类型污染源码。
 		"types": ["node"],
-		// 启用全部严格类型检查。
+		// 启用 strict 选项族；额外检查及单项覆盖由下方选项决定。
 		"strict": true,
 		// 派生类覆盖基类成员时必须显式使用 override，避免意外同名。
 		"noImplicitOverride": true,
@@ -39,8 +39,8 @@
 		// 源码检查跳过第三方声明以减少外部噪声；发布声明消费者测试单独使用 false。
 		"skipLibCheck": true
 	},
-	// 检查插件源码、示例和构建配置。
+	// 检查插件源码和构建配置；测试使用 tests/tsconfig.json。
 	"include": ["src", "tsdown.config.ts"],
-	// 排除依赖、发布产物和测试覆盖率结果，避免重复或陈旧文件参与源码检查。
+	// 排除依赖和发布产物，避免重复或陈旧文件参与源码检查。
 	"exclude": ["node_modules", "dist"]
 }

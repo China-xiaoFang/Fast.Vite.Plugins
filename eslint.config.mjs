@@ -102,6 +102,7 @@ export default defineConfig(
 			"**/{dist,build,coverage,output,temp,tmp}/**",
 			"**/{.cache,.nuxt,.output,.vercel,.nitro}/**",
 			"**/{.vitepress/cache,.vite-inspect}/**",
+			"**/.agents/**",
 			"**/__snapshots__/**",
 			"**/*.min.*",
 			"**/auto-import?(s).d.ts",
@@ -112,6 +113,7 @@ export default defineConfig(
 			"**/bun.lock",
 			"**/bun.lockb",
 			"**/deno.lock",
+			"**/skills-lock.json",
 		],
 		"fast-vite-plugins/ignores/global"
 	),

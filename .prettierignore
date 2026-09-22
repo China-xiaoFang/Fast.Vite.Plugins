@@ -3,3 +3,7 @@ dist
 node_modules
 .pnpm-store
 pnpm-lock.yaml
+
+# AI 技能内容及其锁文件由对应工具维护，不排除根目录 AGENTS.md。
+**/.agents/
+**/skills-lock.json

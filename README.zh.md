@@ -1,18 +1,20 @@
-<p align="left">
-	<strong>简体中文</strong> | <a href="./README.md">English</a>
-</p>
+**简体中文** | [English](./README.md)
 
 <p align="center">
-	<img src="./Fast.png" alt="logo" width="160" />
+	<img src="./Fast.png" width="128" alt="Fast.Vite.Plugins Logo" />
 </p>
 
-# fast-vite-plugins
+<h1 align="center">Fast.Vite.Plugins</h1>
 
-**[使用文档](http://docs.fastdotnet.cn/vite-plugins/) · [官方网站](http://fastdotnet.com)**
+<p align="center">
+	<a href="https://www.npmjs.com/package/fast-vite-plugins"><img src="https://img.shields.io/npm/v/fast-vite-plugins?logo=npm" alt="npm version" /></a>
+	<a href="https://www.npmjs.com/package/fast-vite-plugins"><img src="https://img.shields.io/npm/dm/fast-vite-plugins" alt="npm downloads" /></a>
+	<a href="./LICENSE"><img src="https://img.shields.io/npm/l/fast-vite-plugins" alt="License" /></a>
+</p>
 
-面向现代 Web 应用的公开开源 Vite 插件库，提供完整类型、独立插件函数、严格安全边界、测试、CI、发布校验和框架级文档。
+按需组合的 Vite 插件集合，覆盖代码生成、构建信息、资源处理与部署检查。
 
-[![npm](https://img.shields.io/npm/v/fast-vite-plugins)](https://www.npmjs.com/package/fast-vite-plugins) [![node](https://img.shields.io/badge/node-%5E22.18%20%7C%7C%20%5E24.18-brightgreen)](https://nodejs.org/) [![vite](https://img.shields.io/badge/vite-7%20%7C%7C%208-646cff)](https://vite.dev/) [![license](https://img.shields.io/npm/l/fast-vite-plugins)](./LICENSE)
+**[使用文档](http://docs.fastdotnet.cn/zh-CN/frontend/vite-plugins/) · [官方网站](http://fastdotnet.com)**
 
 ## 特性
 
@@ -52,47 +54,18 @@ pnpm add -D fast-vite-plugins
 
 ## 快速开始
 
+在 `vite.config.ts` 中显式启用需要的插件：
+
 ```ts
 import { defineConfig } from "vite";
-
-import { buildInfo, bundleBudget, compression, envGuard, subresourceIntegrity } from "fast-vite-plugins";
+import { compression } from "fast-vite-plugins";
 
 export default defineConfig({
-	plugins: [
-		envGuard({
-			schema: {
-				VITE_API_URL: { pattern: /^https:\/\// },
-			},
-		}),
-		buildInfo(),
-		subresourceIntegrity({ manifest: true }),
-		bundleBudget({
-			budgets: [
-				{ name: "入口 JS", filter: /\.js$/, limit: 250 * 1024 },
-				{ name: "全部 CSS（gzip）", filter: /\.css$/, limit: 50 * 1024, mode: "gzip", scope: "total" },
-			],
-		}),
-		compression({
-			algorithms: ["gzip", "brotli"],
-			threshold: 10 * 1024,
-		}),
-	],
+	plugins: [compression({ algorithms: ["gzip", "brotli"], threshold: 10 * 1024 })],
 });
 ```
 
-每个插件都需要独立导入和配置，库不会隐式启用任何能力：
-
-```ts
-import { buildInfo, htmlTemplate } from "fast-vite-plugins";
-
-export default defineConfig({
-	plugins: [htmlTemplate({ data: { APP_TITLE: "Fast Admin" }, strict: true }), buildInfo({ fileName: "meta/build-info.json" })],
-});
-```
-
-## 常用场景
-
-[完整配置与示例](http://docs.fastdotnet.cn/vite-plugins/guide)
+该配置只生成预压缩文件；服务器仍需按 `Accept-Encoding` 返回相应资源，不会自动改变部署配置。
 
 ## 安全与部署提示
 
@@ -103,8 +76,8 @@ export default defineConfig({
 
 ## 文档
 
-- [完整 API 参考](http://docs.fastdotnet.cn/vite-plugins/api)
-- [风险指南](http://docs.fastdotnet.cn/vite-plugins/risks)
+- [完整 API 参考](http://docs.fastdotnet.cn/zh-CN/frontend/vite-plugins/api/)
+- [风险指南](http://docs.fastdotnet.cn/zh-CN/frontend/vite-plugins/risks)
 - [拉取、开发、发布与部署](./docs/DEVELOPMENT_RELEASE_DEPLOY.zh-CN.md)
 - [贡献指南](./CONTRIBUTING.md)
 - [工程质量审查](./docs/ENGINEERING_REVIEW.zh-CN.md)
@@ -122,6 +95,12 @@ pnpm check
 
 `check` 会固定执行 tsdown 构建、源码类型检查、发布声明消费者测试、ESLint、Prettier、运行时与真实 Vite 集成测试，以及公共 API、ESM-only 和归档契约测试。仓库根目录就是公开 npm 包；`pnpm build` 只写入根目录下被忽略的 `dist/`，打包和发布也从仓库根目录执行。
 
-## 许可证
+## 版权、许可证与使用声明
 
-[Apache-2.0](./LICENSE)
+版权所有 © 2018-Now 小方。本项目依据 [Apache License 2.0](./LICENSE) 开源；在遵守许可证的前提下，可以使用、修改和分发本软件，包括商业使用。
+
+再分发时，应按许可证要求提供许可证副本、对修改的文件作出显著说明，并保留适用的版权和归属声明；包含需要保留的 NOTICE 信息时一并处理。本说明不替代正式许可证，也不额外要求在产品界面展示作者或项目标识。
+
+使用者应就自身使用、二次开发、部署、数据处理及运营活动遵守适用法律和第三方合法权益，自行取得依法需要的授权。上述内容为合规提醒，不构成附加许可条件。
+
+除适用法律另有规定或另有书面约定外，本软件按“原样”提供；保证排除与责任限制以许可证第 7、8 条为准。提供本项目不代表原作者为使用者的二次开发和运营活动背书，也不当然承担其对第三方作出的合同承诺。本说明不排除依法不得排除的责任。

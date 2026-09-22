@@ -1,18 +1,20 @@
-<p align="left">
-	<a href="./README.zh.md">简体中文</a> | <strong>English</strong>
-</p>
+[简体中文](./README.zh.md) | **English**
 
 <p align="center">
-	<img src="./Fast.png" alt="logo" width="160" />
+	<img src="./Fast.png" width="128" alt="Fast.Vite.Plugins Logo" />
 </p>
 
-# fast-vite-plugins
+<h1 align="center">Fast.Vite.Plugins</h1>
 
-**[Documentation](http://docs.fastdotnet.cn/vite-plugins/) · [Official website](http://fastdotnet.com)**
+<p align="center">
+	<a href="https://www.npmjs.com/package/fast-vite-plugins"><img src="https://img.shields.io/npm/v/fast-vite-plugins?logo=npm" alt="npm version" /></a>
+	<a href="https://www.npmjs.com/package/fast-vite-plugins"><img src="https://img.shields.io/npm/dm/fast-vite-plugins" alt="npm downloads" /></a>
+	<a href="./LICENSE"><img src="https://img.shields.io/npm/l/fast-vite-plugins" alt="License" /></a>
+</p>
 
-An open-source collection of production-grade Vite plugins for modern Web applications, with consistent typed APIs, strict safety boundaries, tests, CI, and release validation.
+Composable Vite plugins for code generation, build information, asset processing and deployment checks.
 
-[![npm](https://img.shields.io/npm/v/fast-vite-plugins)](https://www.npmjs.com/package/fast-vite-plugins) [![node](https://img.shields.io/badge/node-%5E22.18%20%7C%7C%20%5E24.18-brightgreen)](https://nodejs.org/) [![vite](https://img.shields.io/badge/vite-7%20%7C%7C%208-646cff)](https://vite.dev/) [![license](https://img.shields.io/npm/l/fast-vite-plugins)](./LICENSE)
+**[Documentation](http://docs.fastdotnet.cn/en-US/frontend/vite-plugins/) · [Official website](http://fastdotnet.com)**
 
 ## Highlights
 
@@ -52,42 +54,18 @@ The consuming project must use an ESM Vite configuration and Vite 7 or 8.
 
 ## Quick start
 
+Enable only the plugins needed by the application in `vite.config.ts`:
+
 ```ts
 import { defineConfig } from "vite";
-
-import { buildInfo, bundleBudget, compression, envGuard, subresourceIntegrity } from "fast-vite-plugins";
+import { compression } from "fast-vite-plugins";
 
 export default defineConfig({
-	plugins: [
-		envGuard({
-			schema: { VITE_API_URL: { pattern: /^https:\/\// } },
-		}),
-		buildInfo(),
-		subresourceIntegrity({ manifest: true }),
-		bundleBudget({
-			budgets: [
-				{ name: "entry JavaScript", filter: /\.js$/, limit: 250 * 1024 },
-				{ name: "all CSS (gzip)", filter: /\.css$/, limit: 50 * 1024, mode: "gzip", scope: "total" },
-			],
-		}),
-		compression({ algorithms: ["gzip", "brotli"], threshold: 10 * 1024 }),
-	],
+	plugins: [compression({ algorithms: ["gzip", "brotli"], threshold: 10 * 1024 })],
 });
 ```
 
-Every plugin is imported and configured independently. The package does not enable implicit behavior.
-
-```ts
-import { buildInfo, htmlTemplate } from "fast-vite-plugins";
-
-export default defineConfig({
-	plugins: [htmlTemplate({ data: { APP_TITLE: "Fast Admin" }, strict: true }), buildInfo({ fileName: "meta/build-info.json" })],
-});
-```
-
-## Common scenarios
-
-[Full configuration and examples](http://docs.fastdotnet.cn/vite-plugins/guide.en)
+This emits precompressed files only. The server must still select them using `Accept-Encoding`; deployment settings are not changed automatically.
 
 ## Operational notes
 
@@ -99,8 +77,8 @@ export default defineConfig({
 
 ## Documentation
 
-- [Complete API reference](http://docs.fastdotnet.cn/vite-plugins/api.en)
-- [Risk guide](http://docs.fastdotnet.cn/vite-plugins/risks.en)
+- [Complete API reference](http://docs.fastdotnet.cn/en-US/frontend/vite-plugins/api/)
+- [Risk guide](http://docs.fastdotnet.cn/en-US/frontend/vite-plugins/risks)
 - [Development, release, and deployment guide (Chinese)](./docs/DEVELOPMENT_RELEASE_DEPLOY.zh-CN.md)
 - [Contributing guide](./CONTRIBUTING.md)
 - [Changelog](./CHANGELOG.md)
@@ -117,6 +95,12 @@ Use `pnpm dev` for a long-running tsdown watch build while editing plugins.
 
 The repository root is the public npm package. `pnpm build` writes only to the ignored root `dist/` directory, and package inspection or publishing runs from the repository root with pnpm.
 
-## License
+## Copyright, license and use
 
-[Apache-2.0](./LICENSE)
+Copyright © 2018-Now 小方. This project uses [Apache License 2.0](./LICENSE). Use, modification, distribution and commercial use are permitted subject to its terms.
+
+When redistributing, provide the license, mark modified files and preserve applicable copyright, attribution and supplied NOTICE information as required. This summary does not replace the license or impose additional UI attribution.
+
+Users are responsible for the legal compliance and authorization of their own modifications, deployment, data processing and operations. This reminder is not an additional license condition.
+
+Except as required by applicable law or agreed in writing, the software is provided on an "AS IS" basis. Sections 7 and 8 govern warranty disclaimers and liability limits. Providing the project does not endorse downstream activities or assume users' contractual commitments. This statement does not exclude liability that cannot lawfully be excluded.

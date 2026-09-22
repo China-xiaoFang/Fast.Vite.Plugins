@@ -33,10 +33,10 @@ Use `pnpm dev` when you need a watch build. Do not edit `dist/` manually; it is 
 ## Making changes
 
 - Keep each change focused and follow the existing TypeScript, naming, and plugin patterns.
-- Preserve backward compatibility unless a breaking change has been discussed and approved.
+- Implement the current API directly; keep callers, tests, and documentation in sync instead of adding old-version shims.
 - Avoid adding runtime dependencies unless the change cannot reasonably be implemented without one. Vite is currently the package's only peer dependency.
 - Add or update tests for changed behavior, regressions, public types, package exports, and integration behavior as applicable.
-- Keep public API TSDoc, both README files, [api.en](http://docs.fastdotnet.cn/vite-plugins/api.en), [api](http://docs.fastdotnet.cn/vite-plugins/api), and `CHANGELOG.md` synchronized with user-visible API or behavior changes.
+- Keep public API TSDoc, both README files, [api.en](http://docs.fastdotnet.cn/en-US/frontend/vite-plugins/api/), [api](http://docs.fastdotnet.cn/zh-CN/frontend/vite-plugins/api/), and `CHANGELOG.md` synchronized with user-visible API or behavior changes.
 - Preserve output-path validation, deterministic generation, watcher cleanup, and explicit diagnostics when working on file-system or generator features.
 - Never include credentials, tokens, private data, or generated build artifacts in a commit.
 
